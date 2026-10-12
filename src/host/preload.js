@@ -10,6 +10,6 @@ contextBridge.exposeInMainWorld("host", {
   close: () => ipcRenderer.invoke("host:close"),
   screenshot: () => ipcRenderer.invoke("host:screenshot"),
   openHub: () => ipcRenderer.invoke("host:openHub"),
-  meter: (cmd) => ipcRenderer.invoke("host:meter", cmd),
+  meter: (cmd, arg) => ipcRenderer.invoke("host:meter", cmd, arg),
   onEvent: (fn) => { ipcRenderer.on("host:event", (_e, msg) => fn(msg)); },
 });

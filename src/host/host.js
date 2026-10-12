@@ -68,6 +68,7 @@
     "meter.reset": () => host.meter("reset"),
     "meter.status": () => host.meter("status"),
     "meter.installNpcap": () => host.meter("npcap"),
+    "meter.setName": ([name]) => host.meter("name", String(name || "")),
     "theme.get": () => theme,
     "window.screenshot": async () => { const r = await host.screenshot(); showToast(`Screenshot copied, and saved as ${r.name}`); return true; },
     "window.show": () => true,

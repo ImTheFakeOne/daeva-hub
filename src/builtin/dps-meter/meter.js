@@ -25,7 +25,7 @@
     layout: "classic", scale: 100, rowH: 32, gap: 4, rowRadius: 3, maxRows: 12, sortBy: "dps", fadeIdle: false,
     // rows
     nameMode: "name", showIcon: true, showRank: false, showCp: true, showDamage: false, showDps: true, showShare: true,
-    dpsFormat: "full", meDot: true, meOutline: false, pinMe: true,
+    dpsFormat: "full", meDot: true, meOutline: false, pinMe: true, myName: "",
     // bars
     barMode: "top", barColor: "class", barCustom: "#4a7fb5", barAlpha: 85, gradient: false, track: true, trackColor: "#000000", trackAlpha: 35,
     // target and footer
@@ -60,6 +60,7 @@
       ["nameMode", "select", "Names", [["name", "Character names"], ["class", "Class names"], ["hideOthers", "Only my name"]]],
       ["dpsFormat", "select", "DPS numbers", [["full", "591,924/s"], ["compact", "591.92K"]]],
       ["sec", "You"],
+      ["myName", "text", "My character name", "Until the game sends your name (log in or change zone), the meter uses this."],
       ["meDot", "check", "Green dot on my icon"],
       ["meOutline", "check", "Outline my row"],
       ["pinMe", "check", "Always show my row"],
@@ -192,10 +193,18 @@
     list.sort((a, b) => (Number(b[key]) || 0) - (Number(a[key]) || 0));
     return list;
   }
+  // The parser uses the character's id as its name until it learns the real
+  // one; never show that number.
+  const realName = (p) => {
+    const n = String(p.nickname || "").trim();
+    return n && n !== String(p.id) && !/^#?\d+$/.test(n) ? n : "";
+  };
   const nameOf = (p, msg) => {
     const cls = CLASSES[p.job];
-    if (S.nameMode === "class" || (S.nameMode === "hideOthers" && !p.me)) return cls ? cls.name : "Unknown";
-    return p.nickname || (p.me ? (msg.me && msg.me.name) || "You" : (cls ? cls.name : "Unknown"));
+    const className = cls ? cls.name : "Unknown";
+    if (S.nameMode === "class" || (S.nameMode === "hideOthers" && !p.me)) return className;
+    if (p.me) return (msg.me && msg.me.name) || S.myName || realName(p) || "You";
+    return realName(p) || className;
   };
   const barColour = (p) => {
     if (S.barColor === "accent") return "var(--a2-accent)";
@@ -370,6 +379,14 @@
         for (const [v, t] of f[3]) { const o = el("option", "", t); o.value = v; input.append(o); }
         input.value = S[key];
         input.onchange = () => { S[key] = input.value; save(); applySettings(); };
+      } else if (type === "text") {
+        input = el("input"); input.type = "text"; input.value = S[key] || ""; input.maxLength = 40; input.spellcheck = false;
+        input.placeholder = "e.g. KuraChungus";
+        input.onchange = () => { S[key] = input.value.trim(); save(); if (key === "myName") a2.meter.setName(S.myName); if (last) render(last); };
+        row.append(input);
+        body.append(row);
+        if (f[3]) body.append(el("div", "sNote", f[3]));
+        continue;
       } else if (type === "color") {
         input = el("input"); input.type = "color"; input.value = S[key];
         input.oninput = () => { S[key] = input.value; save(); applySettings(); };
@@ -410,6 +427,7 @@
     render({ dps: {} });
     await a2.ready();
     try {
+      if (S.myName) await a2.meter.setName(S.myName);
       await a2.meter.start();
       const s = await a2.meter.status();
       if (s && s.error) showNotice(s.error === "npcap-missing" ? "npcap" : "error", s.error);

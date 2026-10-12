@@ -5,7 +5,9 @@
 //!   {"type":"status","npcap":true}
 //!   {"type":"dps","data":{...DpsData...},"ping":42,"me":{"name":"…","serverId":2001,"class":"Gladiator","level":45}}
 //!
-//! and may write commands to stdin, one per line: `reset`, `quit`.
+//! and may write commands to stdin, one per line: `reset`, `quit`, and
+//! `name <character name>` (the player's own character, as typed in the meter's
+//! settings; an empty name clears it).
 //!
 //! Everything under capture/, combat/, entity/, i18n/, clock.rs, supporters.rs
 //! and platform/{win32,unsupported}/ is A2Tools' code, unchanged (see
@@ -139,6 +141,19 @@ fn main() {
                     }
                     "quit" => {
                         std::process::exit(0);
+                    }
+                    c if c == "name" || c.starts_with("name ") => {
+                        // Same as A2Tools' Settings → character name, typed by the player:
+                        // it names the local player until the game's own self record does.
+                        let name = c.get(5..).unwrap_or("").trim().to_string();
+                        if name.is_empty() {
+                            data_storage.set_local_character_name(None);
+                        } else {
+                            data_storage.set_local_character_name(Some(name.clone()));
+                            if let Some(id) = data_storage.local_player_id() {
+                                data_storage.set_permanent_nickname(id as i32, &name);
+                            }
+                        }
                     }
                     _ => {}
                 }

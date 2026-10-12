@@ -66,6 +66,7 @@
       reset: () => call("meter.reset", []),
       status: () => call("meter.status", []),
       installNpcap: () => call("meter.installNpcap", []),
+      setName: (name) => call("meter.setName", [String(name || "")]), // your character's name, until the game says it
     }),
     ready: () => call("ready", []),
   });

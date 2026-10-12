@@ -270,6 +270,7 @@ async function updateAll() {
 // and its numbers go only to those windows.
 let meter = null;
 let meterStatus = { running: false, npcap: null, error: null };
+let meterName = ""; // the player's character name, from the meter's settings; sent again on every start
 
 function meterDir() {
   return app.isPackaged ? path.join(process.resourcesPath, "meter") : path.join(__dirname, "..", "meter-dist");
@@ -290,6 +291,7 @@ function startMeter() {
   }
   meter = spawn(exe, ["--data", path.join(meterDir(), "data")], { windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
   meterStatus = { running: true, npcap: null, error: null };
+  if (meterName) { try { meter.stdin.write(`name ${meterName}\n`); } catch {} }
   let buf = "";
   meter.stdout.setEncoding("utf8");
   meter.stdout.on("data", (chunk) => {
@@ -455,12 +457,17 @@ ipcMain.handle("host:screenshot", async (e) => {
   return { name };
 });
 ipcMain.handle("host:close", (e) => { closePlugin(pluginOf(e)); return true; });
-ipcMain.handle("host:meter", (e, cmd) => {
+ipcMain.handle("host:meter", (e, cmd, arg) => {
   const id = pluginOf(e);
   if (!findPlugin(id).permissions.includes("meter")) throw new Error('the plugin lacks the "meter" permission');
   if (cmd === "start") { startMeter(); return meterStatus; }
   if (cmd === "status") return meterStatus;
   if (cmd === "reset" && meter) { meter.stdin.write("reset\n"); return true; }
+  if (cmd === "name") {
+    meterName = String(arg || "").replace(/[\r\n]/g, " ").trim().slice(0, 40);
+    if (meter) { try { meter.stdin.write(`name ${meterName}\n`); } catch {} }
+    return true;
+  }
   if (cmd === "npcap") { shell.openExternal("https://npcap.com/#download"); return true; }
   return false;
 });
