@@ -1,0 +1,11 @@
+{
+  "id": "dps-meter",
+  "name": "DPS Meter",
+  "version": "0.1.0",
+  "apiVersion": 2,
+  "author": "ImTheFakeOne (capture code from A2Tools)",
+  "description": "Live damage per second for you and your party, read from the game's network traffic. Needs Npcap.",
+  "permissions": ["meter", "storage"],
+  "decoders": [],
+  "ui": { "panel": { "width": 360, "height": 300 } }
+}

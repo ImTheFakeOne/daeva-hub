@@ -51,6 +51,10 @@
     "storage.get": ([key]) => host.storageGet(String(key)),
     "storage.set": ([key, value]) => host.storageSet(String(key), String(value)),
     notify: ([text]) => { if (!allowed("notify")) throw new Error('the plugin lacks the "notify" permission'); showToast(String(text)); return true; },
+    "meter.start": () => { if (!allowed("meter")) throw new Error('the plugin lacks the "meter" permission'); return host.meter("start"); },
+    "meter.reset": () => host.meter("reset"),
+    "meter.status": () => host.meter("status"),
+    "meter.installNpcap": () => host.meter("npcap"),
     "window.show": () => true,
     "window.hide": () => true,
   };
@@ -67,6 +71,8 @@
     }
   });
 
+  // Live events from the hub (the DPS meter), for plugins allowed them.
+  host.onEvent((msg) => { if (msg && typeof msg.event === "string") deliver(msg.event, msg.data); });
   deliver("language", "en");
   deliver("compact", compact);
   frame = document.createElement("iframe");

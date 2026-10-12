@@ -47,6 +47,7 @@
     const hay = [p.name, p.id, p.author, p.description, ...(p.tags || [])].join(" ").toLowerCase();
     return query.split(/\s+/).every((w) => hay.includes(w));
   };
+  const isOfficial = (id) => S.catalog.plugins.some((p) => p.id === id && p.official);
   const updateFor = (id) => S.updates.find((u) => u.id === id);
   const catalogLatest = () => {
     const best = new Map();
@@ -54,7 +55,7 @@
       const cur = best.get(p.id);
       if (!cur || compareVersions(p.version, cur.version) > 0) best.set(p.id, p);
     }
-    return [...best.values()].sort((a, b) => a.name.localeCompare(b.name));
+    return [...best.values()].sort((a, b) => (b.official ? 1 : 0) - (a.official ? 1 : 0) || a.name.localeCompare(b.name));
   };
   function compareVersions(a, b) {
     const pa = String(a).replace(/^v/, "").split("-")[0].split(".").map(Number);
@@ -82,7 +83,7 @@
   function renderInstalled() {
     const v = $("view-installed");
     v.textContent = "";
-    const list = S.installed.filter(matches);
+    const list = S.installed.filter(matches).sort((a, b) => (b.builtin ? 1 : 0) - (a.builtin ? 1 : 0));
     if (!S.installed.length) {
       v.append(el("div", { class: "empty" },
         el("p", {}, "No plugins installed yet."),
@@ -106,7 +107,7 @@
         actions.append(p.open
           ? el("button", { class: "btn", type: "button", on: { click: () => run("Couldn't close it", () => hub.close(p.id)) } }, "Close")
           : el("button", { class: "btn", type: "button", on: { click: () => run("Couldn't open it", () => hub.open(p.id)) } }, "Open"));
-        if (!p.local) {
+        if (!p.local && !p.builtin) {
           if (confirmUninstall === p.id) {
             actions.append(el("span", { class: "confirm" }, "Uninstall? Your saved data is kept.",
               el("button", { class: "btn danger", type: "button", on: { click: async () => { confirmUninstall = null; await run("Couldn't uninstall it", () => hub.uninstall(p.id, true)); status(`Uninstalled ${p.name}.`, "ok"); } } }, "Uninstall"),
@@ -120,6 +121,7 @@
         el("div", { class: "body" },
           el("h3", {}, p.name, el("span", { class: "ver" }, "v" + p.version),
             p.local ? el("span", { class: "tag gold" }, "local") : null,
+            p.builtin ? el("span", { class: "tag blue" }, "built in") : (isOfficial(p.id) ? el("span", { class: "tag blue" }, "official") : null),
             p.open ? el("span", { class: "tag green" }, "open") : null,
             up ? el("span", { class: "tag gold" }, "update available") : null),
           p.author ? el("p", { class: "meta" }, "by " + p.author) : null,
@@ -133,11 +135,6 @@
     v.textContent = "";
     for (const r of S.catalog.repos.filter((r) => r.error)) {
       v.append(el("p", { class: "status error" }, `${r.input}: ${r.error}`));
-    }
-    if (!S.settings.repos.length) {
-      v.append(el("div", { class: "empty" }, el("p", {}, "You haven't added any repositories yet."),
-        el("button", { class: "btn primary", type: "button", on: { click: () => setTab("settings") } }, "Add a repository")));
-      return;
     }
     if (!S.catalog.checkedAt) {
       v.append(el("div", { class: "empty" }, el("p", {}, "Loading your repositories…")));
@@ -156,6 +153,7 @@
       v.append(el("article", { class: "card" }, icon(p),
         el("div", { class: "body" },
           el("h3", {}, p.name, el("span", { class: "ver" }, "v" + p.version),
+            p.official ? el("span", { class: "tag blue" }, "official") : null,
             inst ? el("span", { class: "tag green" }, inst.local ? "local copy" : `installed v${inst.version}`) : null),
           el("p", { class: "meta" }, [p.author && "by " + p.author, "from " + (p.repoName || "a repository")].filter(Boolean).join(" · ")),
           p.description ? el("p", { class: "desc" }, p.description) : null,
@@ -168,6 +166,13 @@
   function renderSettings() {
     const repos = $("repoList");
     repos.textContent = "";
+    for (const r of S.settings.officialRepos || []) {
+      const info = S.catalog.repos.find((x) => x.input === r);
+      repos.append(el("li", { class: "official" },
+        el("div", { class: "grow" }, el("div", { class: "strong" }, info?.name || "Daeva Hub", el("span", { class: "tag blue" }, "official")),
+          el("div", { class: "meta" + (info?.error ? " err" : "") }, info?.error ? info.error : `${r} · plugins made by the Daeva Hub author, installed for you`)),
+        el("span", { class: "meta" }, "Built in")));
+    }
     for (const r of S.settings.repos) {
       const info = S.catalog.repos.find((x) => x.input === r);
       repos.append(el("li", {},
@@ -175,14 +180,13 @@
           el("div", { class: "meta" + (info?.error ? " err" : "") }, info ? (info.error ? info.error : `${r} · ${info.count} plugin${info.count === 1 ? "" : "s"}`) : r)),
         el("button", { class: "btn ghost", type: "button", on: { click: () => run("Couldn't remove it", () => hub.removeRepo(r)) } }, "Remove")));
     }
-    if (!S.settings.repos.length) repos.append(el("li", { class: "meta" }, "No repositories yet."));
+    if (!S.settings.repos.length) repos.append(el("li", { class: "meta" }, "No other repositories yet. Plugins from other authors appear in Browse once you add theirs."));
     const folders = $("folderList");
     folders.textContent = "";
     for (const d of S.settings.localFolders) {
       folders.append(el("li", {}, el("div", { class: "grow meta" }, d),
         el("button", { class: "btn ghost", type: "button", on: { click: () => run("Couldn't remove it", () => hub.removeLocalFolder(d)) } }, "Remove")));
     }
-    $("checkOnStart").checked = !!S.settings.checkOnStart;
   }
 
   function render() {
@@ -233,14 +237,14 @@
     if (r) { $("repoInput").value = ""; status("Repository added.", "ok"); }
   });
   $("addFolderBtn").addEventListener("click", () => run("Couldn't add the folder", () => hub.addLocalFolder()));
-  $("checkOnStart").addEventListener("change", (e) => run("Couldn't save that", () => hub.setCheckOnStart(e.target.checked)));
+  $("a2toolsLink").addEventListener("click", (e) => { e.preventDefault(); hub.openLink("https://github.com/taengu/A2Tools-DPS-Meter"); });
+  $("npcapLink").addEventListener("click", (e) => { e.preventDefault(); hub.openLink("https://npcap.com/#download"); });
   $("dataBtn").addEventListener("click", () => hub.openDataFolder());
   hub.onChanged(async () => { S = await hub.state(); render(); });
 
   hub.state().then((s) => {
     S = s;
-    if (S.settings.repos.length && !S.installed.length) tab = "browse";
     render();
-    if (S.settings.repos.length && !S.catalog.checkedAt) hub.refresh().then((x) => { S = x; render(); }).catch(() => {});
+    if (!S.catalog.checkedAt) hub.refresh().then((x) => { S = x; render(); }).catch(() => {});
   });
 })();

@@ -3,6 +3,7 @@
 // plugins run in their own always-on-top windows, sandboxed, with no network
 // access, and talk to the hub only through a small message API.
 const { app, BrowserWindow, ipcMain, protocol, dialog, shell, net, screen } = require("electron");
+const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
 const { PluginManager } = require("./core/plugins");
@@ -15,6 +16,11 @@ if (!app.requestSingleInstanceLock()) app.quit();
 protocol.registerSchemesAsPrivileged([
   { scheme: "plugin", privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
+
+// Your own plugins: always listed, and installed automatically the first time.
+// Other people's repositories are added by each user in Settings.
+const OFFICIAL_REPOS = ["github.com/ImTheFakeOne/daeva-hub"];
+const BUILTIN_DIR = path.join(__dirname, "builtin");
 
 let hubWindow = null;
 let pm = null;
@@ -105,6 +111,7 @@ function openPlugin(id) {
   win.on("resize", remember);
   win.on("closed", () => {
     pluginWindows.delete(id);
+    stopMeterIfUnused();
     if (!quitting) { settings.window(id).open = false; settings.save(); }
     notifyHub();
   });
@@ -121,19 +128,37 @@ function closePlugin(id) {
 
 // ── repositories and updates ─────────────────────────────────────────────
 async function refreshCatalog() {
-  const repos = await Promise.all(settings.data.repos.map((r) => fetchRepo(r, net.fetch.bind(net))));
+  const sources = [...OFFICIAL_REPOS.map((r) => ({ r, official: true })), ...settings.data.repos.map((r) => ({ r, official: false }))];
+  const repos = await Promise.all(sources.map(async ({ r, official }) => ({ ...(await fetchRepo(r, net.fetch.bind(net))), official })));
   const plugins = [];
-  for (const r of repos) for (const p of r.plugins) plugins.push({ ...p, repoName: r.name || r.input });
+  for (const r of repos) for (const p of r.plugins) plugins.push({ ...p, repoName: r.name || r.input, official: r.official });
   catalog = { repos: repos.map(({ plugins: list, ...rest }) => ({ ...rest, count: list.length })), plugins, checkedAt: new Date().toISOString() };
+  await installOfficialPlugins();
   notifyHub();
   return catalog;
+}
+
+// Official plugins are installed once, automatically. If the user uninstalls
+// one, it stays uninstalled (it is remembered in autoInstalled).
+async function installOfficialPlugins() {
+  const done = (settings.data.autoInstalled ||= []);
+  const have = new Set(pm.list(localFolders()).map((p) => p.id));
+  for (const entry of catalog.plugins.filter((p) => p.official)) {
+    if (have.has(entry.id) || done.includes(entry.id)) continue;
+    try {
+      pm.fetch = net.fetch.bind(net);
+      await pm.install(entry);
+      done.push(entry.id);
+      settings.save();
+    } catch { /* try again next time */ }
+  }
 }
 
 function state() {
   const installed = pm.list(localFolders()).map((p) => ({ ...p, open: pluginWindows.has(p.id) }));
   return {
     version: app.getVersion(),
-    settings: { repos: settings.data.repos, localFolders: settings.data.localFolders, checkOnStart: settings.data.checkOnStart },
+    settings: { repos: settings.data.repos, officialRepos: OFFICIAL_REPOS, localFolders: settings.data.localFolders, checkOnStart: settings.data.checkOnStart },
     installed,
     catalog,
     updates: pm.updates(catalog.plugins, localFolders()).map((u) => ({ id: u.installed.id, from: u.installed.version, to: u.available.version })),
@@ -164,6 +189,73 @@ async function updateAll() {
   return results;
 }
 
+// ── the DPS meter ────────────────────────────────────────────────────────
+// daeva-meter.exe is A2Tools' capture and damage parser, run without a window.
+// It runs only while a plugin with the "meter" permission has its window open,
+// and its numbers go only to those windows.
+let meter = null;
+let meterStatus = { running: false, npcap: null, error: null };
+
+function meterDir() {
+  return app.isPackaged ? path.join(process.resourcesPath, "meter") : path.join(__dirname, "..", "meter-dist");
+}
+const meterWindows = () => [...pluginWindows].filter(([id, w]) => !w.isDestroyed() && (findPlugin(id)?.permissions || []).includes("meter"));
+
+function sendMeter(event, data) {
+  for (const [, w] of meterWindows()) w.webContents.send("host:event", { event, data });
+}
+
+function startMeter() {
+  if (meter) return;
+  const exe = path.join(meterDir(), process.platform === "win32" ? "daeva-meter.exe" : "daeva-meter");
+  if (!fs.existsSync(exe)) {
+    meterStatus = { running: false, npcap: null, error: "The meter isn't included in this build." };
+    sendMeter("meter-status", meterStatus);
+    return;
+  }
+  meter = spawn(exe, ["--data", path.join(meterDir(), "data")], { windowsHide: true, stdio: ["pipe", "pipe", "pipe"] });
+  meterStatus = { running: true, npcap: null, error: null };
+  let buf = "";
+  meter.stdout.setEncoding("utf8");
+  meter.stdout.on("data", (chunk) => {
+    buf += chunk;
+    let i;
+    while ((i = buf.indexOf("\n")) >= 0) {
+      const line = buf.slice(0, i);
+      buf = buf.slice(i + 1);
+      if (!line.trim()) continue;
+      let msg;
+      try { msg = JSON.parse(line); } catch { continue; }
+      if (msg.type === "status") {
+        meterStatus = { ...meterStatus, npcap: !!msg.npcap, error: msg.npcap ? null : "npcap-missing" };
+        sendMeter("meter-status", meterStatus);
+      } else if (msg.type === "dps") {
+        sendMeter("meter", { dps: msg.data, ping: msg.ping, me: msg.me });
+      }
+    }
+  });
+  meter.stderr.on("data", () => {});
+  meter.on("exit", (code) => {
+    meter = null;
+    meterStatus = { running: false, npcap: meterStatus.npcap, error: code ? `The meter stopped (code ${code}).` : null };
+    sendMeter("meter-status", meterStatus);
+  });
+  meter.on("error", (e) => {
+    meter = null;
+    meterStatus = { running: false, npcap: null, error: e.code === "EACCES" || e.code === "EPERM" ? "Windows didn't allow the meter to start." : e.message };
+    sendMeter("meter-status", meterStatus);
+  });
+}
+
+function stopMeterIfUnused() {
+  if (meter && !meterWindows().length) {
+    try { meter.stdin.write("quit\n"); } catch {}
+    const m = meter;
+    setTimeout(() => { try { m.kill(); } catch {} }, 1500);
+    meter = null;
+  }
+}
+
 // ── IPC: the hub window ──────────────────────────────────────────────────
 const fromHub = (e) => hubWindow && e.sender === hubWindow.webContents;
 function handleHub(channel, fn) {
@@ -176,11 +268,19 @@ handleHub("hub:state", () => state());
 handleHub("hub:refresh", async () => { await refreshCatalog(); return state(); });
 handleHub("hub:install", async (id) => { await installOrUpdate(String(id)); return state(); });
 handleHub("hub:updateAll", async () => { const results = await updateAll(); return { results, state: state() }; });
-handleHub("hub:uninstall", (id, keepData) => { closePlugin(String(id)); pm.uninstall(String(id), { keepData: keepData !== false }); notifyHub(); return state(); });
+handleHub("hub:uninstall", (id, keepData) => {
+  const p = findPlugin(String(id));
+  if (p && p.builtin) throw new Error("Built-in plugins can't be uninstalled.");
+  closePlugin(String(id));
+  pm.uninstall(String(id), { keepData: keepData !== false });
+  notifyHub();
+  return state();
+});
 handleHub("hub:open", (id) => { openPlugin(String(id)); return state(); });
 handleHub("hub:close", (id) => { closePlugin(String(id)); return state(); });
 handleHub("hub:addRepo", async (input) => {
   const url = resolveRepoUrl(input); // throws a readable error for bad input
+  if (OFFICIAL_REPOS.some((r) => resolveRepoUrl(r) === url)) throw new Error("That's the official repository: it's always included.");
   const r = await fetchRepo(input, net.fetch.bind(net));
   if (r.error) throw new Error(r.error);
   if (!settings.data.repos.some((x) => resolveRepoUrl(x) === url)) settings.data.repos.push(String(input).trim());
@@ -223,7 +323,7 @@ ipcMain.handle("host:hello", (e) => {
   const id = pluginOf(e);
   const p = findPlugin(id);
   const ws = settings.window(id);
-  return { id, name: p.name, version: p.version, permissions: p.permissions, local: p.local, opacity: ws.opacity, compact: ws.compact };
+  return { id, name: p.name, version: p.version, permissions: p.permissions, local: p.local, builtin: !!p.builtin, opacity: ws.opacity, compact: ws.compact };
 });
 ipcMain.handle("host:storageGet", (e, key) => {
   const id = pluginOf(e);
@@ -244,22 +344,34 @@ ipcMain.handle("host:panel", (e, prefs) => {
   return true;
 });
 ipcMain.handle("host:close", (e) => { closePlugin(pluginOf(e)); return true; });
+ipcMain.handle("host:meter", (e, cmd) => {
+  const id = pluginOf(e);
+  if (!findPlugin(id).permissions.includes("meter")) throw new Error('the plugin lacks the "meter" permission');
+  if (cmd === "start") { startMeter(); return meterStatus; }
+  if (cmd === "status") return meterStatus;
+  if (cmd === "reset" && meter) { meter.stdin.write("reset\n"); return true; }
+  if (cmd === "npcap") { shell.openExternal("https://npcap.com/#download"); return true; }
+  return false;
+});
 ipcMain.handle("host:openHub", () => { createHub(); return true; });
 
 // ── start ────────────────────────────────────────────────────────────────
 app.on("second-instance", () => createHub());
-app.on("before-quit", () => { quitting = true; });
+app.on("before-quit", () => { quitting = true; if (meter) { try { meter.kill(); } catch {} } });
 app.on("window-all-closed", () => app.quit());
 
 app.whenReady().then(async () => {
   const root = app.getPath("userData");
   settings = new Settings(path.join(root, "settings.json"));
   pm = new PluginManager(root, { fetch: net.fetch.bind(net) });
+  try { pm.builtinDirs = fs.readdirSync(BUILTIN_DIR).map((n) => path.join(BUILTIN_DIR, n)); } catch { pm.builtinDirs = []; }
   protocol.handle("plugin", servePluginFile);
   createHub();
   for (const [id, ws] of Object.entries(settings.data.windows)) {
     if (ws.open) { try { openPlugin(id); } catch { ws.open = false; } }
   }
   settings.save();
-  if (settings.data.checkOnStart && settings.data.repos.length) refreshCatalog().catch(() => {});
+  // Always look at the official repository on start, so your plugins arrive
+  // (and update) without anyone having to add anything.
+  refreshCatalog().catch(() => {});
 });

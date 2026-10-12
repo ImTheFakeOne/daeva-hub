@@ -55,15 +55,23 @@ class PluginManager {
     for (const d of [this.pluginsDir, this.dataDir, this.tmpDir]) fs.mkdirSync(d, { recursive: true });
   }
 
-  /** Installed plugins plus any local (developer) folders. */
-  list(localFolders = []) {
+  /**
+   * Installed plugins, plus any local (developer) folders, plus the plugins
+   * built into the app (`builtinDirs`, which can't be removed or updated on
+   * their own: they update with the app).
+   */
+  list(localFolders = [], builtinDirs = this.builtinDirs || []) {
     const out = [];
+    for (const dir of builtinDirs) {
+      try { out.push({ ...readManifest(dir), dir, local: false, builtin: true, source: "", installedAt: null }); } catch {}
+    }
     for (const name of fs.readdirSync(this.pluginsDir)) {
       const dir = path.join(this.pluginsDir, name);
       try {
         const m = readManifest(dir);
         let meta = {};
         try { meta = JSON.parse(fs.readFileSync(path.join(dir, ".hub.json"), "utf8")); } catch {}
+        if (out.some((p) => p.id === m.id)) continue; // a built-in plugin wins
         out.push({ ...m, dir, local: false, source: meta.source || "", installedAt: meta.installedAt || null });
       } catch { /* not a plugin folder; skip */ }
     }
@@ -126,7 +134,7 @@ class PluginManager {
   updates(catalog, localFolders = []) {
     const out = [];
     for (const p of this.list(localFolders)) {
-      if (!p.id || p.local) continue;
+      if (!p.id || p.local || p.builtin) continue;
       const best = catalog.filter((e) => e.id === p.id).sort((a, b) => (newer(a.version, b.version) ? -1 : 1))[0];
       if (best && newer(best.version, p.version)) out.push({ installed: p, available: best });
     }

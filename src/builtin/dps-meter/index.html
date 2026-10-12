@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DPS Meter</title>
+<link rel="stylesheet" href="meter.css">
+</head>
+<body>
+  <header class="top" id="top">
+    <div class="target">
+      <div class="tname" id="tname">Waiting for combat…</div>
+      <div class="hp" id="hp" hidden><div class="hpfill" id="hpfill"></div><span id="hptext"></span></div>
+    </div>
+    <div class="meta">
+      <span class="time" id="time">00:00</span>
+      <span class="ping" id="ping" title="Ping to the game server"></span>
+      <button class="reset" id="reset" title="Start a new fight">Reset</button>
+    </div>
+  </header>
+  <div class="notice" id="notice" hidden></div>
+  <main id="rows"></main>
+  <footer class="foot" id="foot">
+    <span id="total"></span>
+    <label class="opt"><input type="checkbox" id="mineOnly"> Only me</label>
+  </footer>
+  <script src="/_sdk/a2.js"></script>
+  <script src="meter.js"></script>
+</body>
+</html>

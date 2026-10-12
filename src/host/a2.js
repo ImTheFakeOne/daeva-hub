@@ -7,6 +7,7 @@
 //   await a2.storage.get(key)          the plugin's own saved data (JSON values)
 //   await a2.storage.set(key, value)
 //   a2.notify(text)                    a short message in the plugin's window
+//   a2.meter.start() / a2.meter.reset()  the DPS meter (permission "meter")
 //   a2.ready()                         call once your handlers are set
 (() => {
   const handlers = {};
@@ -39,6 +40,15 @@
     }),
     notify: (text) => call("notify", [String(text)]),
     window: Object.freeze({ show: () => call("window.show", []), hide: () => call("window.hide", []) }),
+    // DPS meter (permission "meter"): start() begins capture; numbers arrive as
+    // a2.on("meter", ({dps, ping, me}) => …) twice a second, and the capture
+    // state as a2.on("meter-status", ({running, npcap, error}) => …).
+    meter: Object.freeze({
+      start: () => call("meter.start", []),
+      reset: () => call("meter.reset", []),
+      status: () => call("meter.status", []),
+      installNpcap: () => call("meter.installNpcap", []),
+    }),
     ready: () => call("ready", []),
   });
 })();

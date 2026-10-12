@@ -1,0 +1,20 @@
+{
+  "name": "Daeva Hub (official)",
+  "plugins": [
+    {
+      "id": "aion2-checklist",
+      "name": "Aion 2 Checklist",
+      "author": "ImTheFakeOne",
+      "description": "Daily and weekly checklist for every character, split into PvE and PvP, with the official 07:00 UTC resets. You tick everything yourself.",
+      "version": "0.3.0",
+      "tags": [
+        "checklist",
+        "dailies",
+        "weeklies"
+      ],
+      "download": "https://github.com/ImTheFakeOne/aion2-checklist/archive/83e0193da5ec9f3d35655fcad8a9378884962070.zip",
+      "icon": "https://raw.githubusercontent.com/ImTheFakeOne/aion2-checklist/HEAD/img/main.png",
+      "repoUrl": "https://github.com/ImTheFakeOne/aion2-checklist"
+    }
+  ]
+}

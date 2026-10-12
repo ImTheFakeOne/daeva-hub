@@ -27,6 +27,20 @@ jobs:
       - name: Test
         run: npm test
 
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: meter
+
+      - name: Build the DPS meter
+        shell: bash
+        run: |
+          cargo build --release --manifest-path meter/Cargo.toml
+          mkdir -p meter-dist
+          cp meter/target/release/daeva-meter.exe meter-dist/
+          cp -r meter/data meter-dist/data
+
       - name: Build installer
         run: npx electron-builder --win nsis --publish never
 

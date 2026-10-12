@@ -1,0 +1,40 @@
+[package]
+name = "daeva-meter"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+description = "Daeva Hub's DPS meter: A2Tools' capture and damage parser, run headless, reporting to Daeva Hub."
+publish = false
+
+[features]
+# A2Tools' code is written against these two features. "desktop" is always on
+# here (live capture); "online" never is (no accounts, uploads or downloads).
+default = ["desktop"]
+desktop = []
+online = []
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+lz4_flex = "0.11"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+parking_lot = "0.12"
+libloading = "0.8"
+sha2 = "0.11.0"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Registry",
+    "Win32_UI_Shell",
+] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+strip = true

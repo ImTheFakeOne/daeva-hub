@@ -4,13 +4,18 @@ A plugin launcher for Aion 2 tools, in the spirit of Dalamud: browse plugins fro
 
 Daeva Hub never touches the game. Plugins run in their own always-on-top overlay windows, sandboxed, with no internet access.
 
+## What comes with it
+
+- **DPS Meter** (built in): live damage per second for you and your party, with the target's HP, fight time and ping. It reads the game's network traffic, the same way the A2Tools DPS Meter does (its capture code comes from A2Tools). It needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
+- **Official plugins**, such as the **Aion 2 Checklist**, install themselves the first time Daeva Hub starts and update like any other plugin. They are listed in this repository's [`repo.json`](repo.json). If you uninstall one, it stays uninstalled; reinstall it from **Browse**.
+
 ## Install
 
 Download `DaevaHub-Setup-<version>.exe` from the [Releases page](https://github.com/ImTheFakeOne/daeva-hub/releases) and run it. Windows may warn that the installer is from an unknown publisher, because it isn't code-signed: choose **More info → Run anyway**.
 
 ## Use
 
-1. **Settings → Plugin repositories:** paste a repository address and click **Add**. For example `github.com/ImTheFakeOne/aion2-checklist`.
+1. **Settings → Plugin repositories:** the official repository is always there. To get plugins from other authors, paste their repository address and click **Add**.
 2. **Browse:** search everything your repositories offer, and click **Install**.
 3. **Installed:** open, close or uninstall plugins. Each one opens in its own overlay window. Drag it by its title bar, set its background opacity with the slider, and fold its controls away with ▾. Windows remember where you left them and reopen next time.
 4. **Update all** (top right) installs every newer version your repositories list. Daeva Hub checks for updates when it starts, and whenever you click **Check for updates**.
@@ -35,7 +40,7 @@ A plugin is a folder with a `manifest.json` and an `index.html`:
 ```
 
 - `id`: lowercase letters, digits and `-`, at most 40 characters.
-- `permissions`: `storage` (save its own data) and `notify` (short messages in its window).
+- `permissions`: `storage` (save its own data), `notify` (short messages in its window) and `meter` (live DPS numbers from the built-in meter).
 
 The page loads the SDK with `<script src="/_sdk/a2.js"></script>` and gets an `a2` object:
 
@@ -45,6 +50,12 @@ await a2.storage.set("state", { ticks: 3 });      // any JSON value, up to 1 MB
 a2.notify("Saved!");
 a2.on("compact", (on) => { /* hide your controls */ });
 a2.ready();                                        // call once your handlers are set
+
+// with the "meter" permission:
+a2.on("meter", ({ dps, ping, me }) => { /* dps.map, dps.targetName, dps.battleTime … twice a second */ });
+a2.on("meter-status", ({ running, npcap, error }) => {});
+await a2.meter.start();                            // starts capture (stops when no meter window is open)
+await a2.meter.reset();                            // new fight
 ```
 
 The SDK matches the A2Tools DPS Meter's plugin SDK, so plugins written for A2Tools run here too. Plugins can't reach the network, and their scripts and styles must be files in the plugin folder. Keep the page background transparent: the window paints its own panel at the opacity the player picks.
@@ -80,6 +91,8 @@ A repository is one JSON file. Put a `repo.json` at the top of a GitHub reposito
 
 ```
 npm install
+cargo build --release --manifest-path meter/Cargo.toml   # the DPS meter (Rust)
+# copy meter/target/release/daeva-meter.exe and meter/data into meter-dist/
 npm start        # run it
 npm test         # the core tests
 npm run dist     # build the Windows installer into dist/
@@ -89,4 +102,4 @@ Every push to `main` makes GitHub Actions build the installer and publish it as 
 
 ## Licence
 
-MIT – see [LICENSE](LICENSE).
+GPL-3.0 – see [LICENSE](LICENSE). The DPS meter's capture and damage code in `meter/` comes from [A2Tools DPS Meter](https://github.com/taengu/A2Tools-DPS-Meter) by taengu and contributors, also GPL-3.0; the commit it was taken from is in `meter/A2TOOLS_COMMIT`. Its class icons are from A2Tools too.
