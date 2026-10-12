@@ -1,4 +1,4 @@
-// node --test test/
+// npm test
 "use strict";
 const test = require("node:test");
 const assert = require("node:assert");
