@@ -1,0 +1,92 @@
+# Daeva Hub
+
+A plugin launcher for Aion 2 tools, in the spirit of Dalamud: browse plugins from repositories you choose, install them with one click, and keep them all up to date with **Update all**.
+
+Daeva Hub never touches the game. Plugins run in their own always-on-top overlay windows, sandboxed, with no internet access.
+
+## Install
+
+Download `DaevaHub-Setup-<version>.exe` from the [Releases page](https://github.com/ImTheFakeOne/daeva-hub/releases) and run it. Windows may warn that the installer is from an unknown publisher, because it isn't code-signed: choose **More info → Run anyway**.
+
+## Use
+
+1. **Settings → Plugin repositories:** paste a repository address and click **Add**. For example `github.com/ImTheFakeOne/aion2-checklist`.
+2. **Browse:** search everything your repositories offer, and click **Install**.
+3. **Installed:** open, close or uninstall plugins. Each one opens in its own overlay window. Drag it by its title bar, set its background opacity with the slider, and fold its controls away with ▾. Windows remember where you left them and reopen next time.
+4. **Update all** (top right) installs every newer version your repositories list. Daeva Hub checks for updates when it starts, and whenever you click **Check for updates**.
+
+Overlay windows show above the game in **borderless / windowed fullscreen**. In exclusive fullscreen Windows doesn't allow anything on top of the game.
+
+## Make a plugin
+
+A plugin is a folder with a `manifest.json` and an `index.html`:
+
+```json
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "1.0.0",
+  "apiVersion": 2,
+  "author": "you",
+  "description": "What it does, in one sentence.",
+  "permissions": ["storage"],
+  "ui": { "panel": { "width": 360, "height": 480 } }
+}
+```
+
+- `id`: lowercase letters, digits and `-`, at most 40 characters.
+- `permissions`: `storage` (save its own data) and `notify` (short messages in its window).
+
+The page loads the SDK with `<script src="/_sdk/a2.js"></script>` and gets an `a2` object:
+
+```js
+const saved = await a2.storage.get("state");      // your data, or null
+await a2.storage.set("state", { ticks: 3 });      // any JSON value, up to 1 MB
+a2.notify("Saved!");
+a2.on("compact", (on) => { /* hide your controls */ });
+a2.ready();                                        // call once your handlers are set
+```
+
+The SDK matches the A2Tools DPS Meter's plugin SDK, so plugins written for A2Tools run here too. Plugins can't reach the network, and their scripts and styles must be files in the plugin folder. Keep the page background transparent: the window paints its own panel at the opacity the player picks.
+
+While you work on a plugin, add its folder under **Settings → Local plugin folders**. It loads straight from the folder; close and reopen its window to see your changes.
+
+## Publish plugins: the repository file
+
+A repository is one JSON file. Put a `repo.json` at the top of a GitHub repository, and people can add it by its address (`github.com/you/your-repo`):
+
+```json
+{
+  "name": "My plugins",
+  "plugins": [
+    {
+      "id": "my-plugin",
+      "name": "My Plugin",
+      "author": "you",
+      "description": "What it does.",
+      "version": "1.0.0",
+      "tags": ["timers"],
+      "download": "https://github.com/you/your-repo/archive/refs/tags/v1.0.0.zip",
+      "icon": "https://raw.githubusercontent.com/you/your-repo/HEAD/icon.png",
+      "repoUrl": "https://github.com/you/your-repo"
+    }
+  ]
+}
+```
+
+`download` is a zip containing the plugin folder. A GitHub archive works as it is: of a tag (`…/archive/refs/tags/v1.0.0.zip`) or of a commit (`…/archive/<commit id>.zip`). To release an update: raise `version` in `manifest.json` and push, then change `version` and `download` in `repo.json` to match. Everyone gets it with **Update all**.
+
+## Build it yourself
+
+```
+npm install
+npm start        # run it
+npm test         # the core tests
+npm run dist     # build the Windows installer into dist/
+```
+
+Every push to `main` makes GitHub Actions build the installer and publish it as the release for the version in `package.json`. To ship a new version, raise `version` there and push.
+
+## Licence
+
+MIT – see [LICENSE](LICENSE).

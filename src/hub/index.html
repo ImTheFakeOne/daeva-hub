@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' https: data:">
+<title>Daeva Hub</title>
+<link rel="stylesheet" href="hub.css">
+</head>
+<body>
+  <aside class="side">
+    <div class="brand"><span class="mark">◆</span> Daeva Hub</div>
+    <nav class="nav" role="tablist">
+      <button class="navItem" type="button" role="tab" data-tab="installed" id="tab-installed">Installed <span class="count" id="countInstalled"></span></button>
+      <button class="navItem" type="button" role="tab" data-tab="browse" id="tab-browse">Browse <span class="count" id="countBrowse"></span></button>
+      <button class="navItem" type="button" role="tab" data-tab="settings" id="tab-settings">Settings</button>
+    </nav>
+    <div class="sideFoot" id="sideFoot"></div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <input class="search" id="search" type="search" placeholder="Search plugins" aria-label="Search plugins">
+      <button class="btn" id="checkBtn" type="button">Check for updates</button>
+      <button class="btn primary" id="updateAllBtn" type="button">Update all</button>
+    </header>
+    <div class="status" id="status" role="status" hidden></div>
+
+    <section class="view" id="view-installed" role="tabpanel"></section>
+    <section class="view" id="view-browse" role="tabpanel" hidden></section>
+    <section class="view" id="view-settings" role="tabpanel" hidden>
+      <h2>Plugin repositories</h2>
+      <p class="hint">Paste a repository address: a GitHub repository (github.com/owner/name, which must contain a <code>repo.json</code>) or a direct link to a repository JSON file. Every plugin they list shows up under Browse.</p>
+      <form class="addRow" id="repoForm">
+        <input id="repoInput" type="text" placeholder="github.com/owner/repository" aria-label="Repository address" autocomplete="off">
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+      <ul class="list" id="repoList"></ul>
+
+      <h2>Local plugin folders</h2>
+      <p class="hint">For making your own plugins: a folder with a <code>manifest.json</code> and <code>index.html</code>. Local plugins load straight from the folder and never update from a repository.</p>
+      <button class="btn" id="addFolderBtn" type="button">Add folder…</button>
+      <ul class="list" id="folderList"></ul>
+
+      <h2>Startup</h2>
+      <label class="check"><input type="checkbox" id="checkOnStart"> Check for plugin updates when Daeva Hub starts</label>
+
+      <h2>About</h2>
+      <p class="hint">Plugins run in their own windows, sandboxed, with no internet access, and never touch the game. Only install plugins from repositories you trust.</p>
+      <button class="btn" id="dataBtn" type="button">Open the data folder</button>
+    </section>
+  </main>
+  <script src="hub.js"></script>
+</body>
+</html>

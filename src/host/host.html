@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; frame-src plugin:; img-src 'self' data:">
+<title>Plugin</title>
+<link rel="stylesheet" href="host.css">
+</head>
+<body>
+  <div class="panel">
+    <div class="bar">
+      <button class="hubBtn" id="hubBtn" type="button" title="Open Daeva Hub" aria-label="Open Daeva Hub">◆</button>
+      <span class="name" id="name">Loading…</span>
+      <span class="badge" id="badge" hidden>local</span>
+      <input class="opacity" id="opacity" type="range" min="20" max="100" step="5" title="Background opacity" aria-label="Background opacity">
+      <button class="iconBtn" id="compact" type="button" aria-pressed="false">▾</button>
+      <button class="iconBtn close" id="close" type="button" title="Close" aria-label="Close">✕</button>
+    </div>
+    <div class="stage" id="stage"></div>
+    <div class="toast" id="toast" hidden></div>
+  </div>
+  <script src="host.js"></script>
+</body>
+</html>

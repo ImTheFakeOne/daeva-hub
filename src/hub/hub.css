@@ -1,0 +1,81 @@
+/* Daeva Hub: dark launcher with a gold accent, like the overlay it drives. */
+:root {
+  --bg: #0d1119; --side: #0a0e15; --card: #151b27; --card2: #1a2130; --line: #263044;
+  --fg: #e7eaf2; --muted: #8c94a8; --gold: #e0b555; --gold-ink: #1a1405; --green: #5cc47a; --red: #ff6b5c;
+  --display: "Palatino Linotype", Palatino, Georgia, serif;
+  --body: "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { display: grid; grid-template-columns: 210px minmax(0, 1fr); background: var(--bg); color: var(--fg); font: 14px/1.45 var(--body); }
+button, input { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+[hidden] { display: none !important; }
+code { font-family: Consolas, ui-monospace, monospace; font-size: .92em; color: var(--gold); }
+
+.side { background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 18px 12px; gap: 18px; }
+.brand { font-family: var(--display); font-size: 20px; letter-spacing: .02em; padding: 0 8px; }
+.mark { color: var(--gold); }
+.nav { display: flex; flex-direction: column; gap: 4px; }
+.navItem { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; padding: 9px 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-weight: 600; }
+.navItem:hover { background: var(--card); color: var(--fg); }
+.navItem[aria-selected="true"] { background: var(--card2); color: var(--fg); box-shadow: inset 2px 0 0 var(--gold); }
+.count { font-size: 11px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+.count.hot { color: var(--gold-ink); background: var(--gold); padding: 1px 7px; border-radius: 999px; }
+.sideFoot { margin-top: auto; padding: 0 8px; color: var(--muted); font-size: 12px; }
+
+.main { min-width: 0; overflow-y: auto; padding: 18px 24px 40px; }
+.top { position: sticky; top: 0; z-index: 2; display: flex; gap: 8px; align-items: center; padding-bottom: 14px; background: var(--bg); }
+.search { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); }
+.search::placeholder, .addRow input::placeholder { color: var(--muted); }
+
+.btn { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-weight: 600; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn.primary { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn.ghost { background: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--fg); }
+.btn.danger { background: var(--red); border-color: var(--red); color: #1a0705; }
+.btn:disabled { opacity: .45; cursor: default; }
+.link { background: none; border: 0; padding: 0; color: var(--gold); cursor: pointer; font-size: 12px; }
+
+.status { margin: 0 0 12px; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); }
+.status.ok { border-color: rgba(92,196,122,.5); }
+.status.error { border-color: rgba(255,107,92,.6); color: #ffd2cc; }
+
+.view { display: flex; flex-direction: column; gap: 10px; }
+.card { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.card.running { border-color: rgba(92,196,122,.45); }
+.card.broken { border-color: rgba(255,107,92,.5); }
+.icon { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: var(--card2); }
+.icon.letter { display: grid; place-items: center; font-family: var(--display); font-size: 24px; color: var(--gold); border: 1px solid var(--line); }
+.body { min-width: 0; }
+.body h3 { margin: 0; font-size: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ver { font-size: 12px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meta { margin: 2px 0 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.meta.err { color: #ffb3aa; }
+.desc { margin: 6px 0 0; max-width: 70ch; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.tag.gold { color: var(--gold); border-color: rgba(224,181,85,.5); cursor: default; }
+.tag.green { color: var(--green); border-color: rgba(92,196,122,.5); cursor: default; }
+.actions { display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-width: 120px; }
+.confirm { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #ffd2cc; max-width: 180px; }
+.working { color: var(--gold); font-weight: 600; padding: 7px 0; text-align: center; }
+.empty { padding: 40px 10px; text-align: center; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.empty p { margin: 0; }
+.empty .btn { margin-top: 12px; }
+
+#view-settings h2 { font-family: var(--display); font-weight: 400; font-size: 18px; color: var(--gold); margin: 18px 0 0; }
+#view-settings h2:first-child { margin-top: 0; }
+.hint { color: var(--muted); margin: 0; max-width: 72ch; }
+.addRow { display: flex; gap: 8px; }
+.addRow input { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.list li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.grow { flex: 1; min-width: 0; }
+.strong { font-weight: 600; }
+.check { display: flex; gap: 8px; align-items: center; }
+.check input { accent-color: var(--gold); width: 16px; height: 16px; }
+#view-settings > .btn { align-self: flex-start; }

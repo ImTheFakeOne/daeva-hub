@@ -1,0 +1,27 @@
+{
+  "name": "daeva-hub",
+  "productName": "Daeva Hub",
+  "version": "0.1.0",
+  "description": "Plugin launcher for Aion 2 tools: browse, install and update overlay plugins from your own repositories.",
+  "main": "src/main.js",
+  "author": "ImTheFakeOne",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/",
+    "dist": "electron-builder --win nsis --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "io.github.imthefakeone.daevahub",
+    "productName": "Daeva Hub",
+    "directories": { "output": "dist" },
+    "files": ["src/**/*", "build/icon.png", "package.json"],
+    "win": { "target": ["nsis"], "icon": "build/icon.ico", "artifactName": "DaevaHub-Setup-${version}.${ext}" },
+    "nsis": { "oneClick": false, "perMachine": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "Daeva Hub" }
+  }
+}
