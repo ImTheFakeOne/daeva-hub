@@ -159,6 +159,25 @@ function toggleAllLocks() {
   for (const id of ids) setLocked(id, !anyLocked);
 }
 
+// Puts a plugin back to how it was when installed, in the parts the player picks:
+// window (position, size, opacity, fold, lock), colours (its own theme),
+// settings (the storage keys its manifest lists in "settingsKeys"), data (everything it saved).
+async function resetPlugin(id, what = {}) {
+  const p = findPlugin(id);
+  if (!p || !p.id) throw new Error("That plugin isn't installed.");
+  const win = pluginWindows.get(id);
+  const wasOpen = !!(win && !win.isDestroyed());
+  if (wasOpen) { const closed = new Promise((r) => win.once("closed", r)); win.close(); await closed; }
+  if (what.window) delete settings.data.windows[id];
+  if (what.colours && settings.data.pluginThemes) delete settings.data.pluginThemes[id];
+  if (what.data) pm.storageClear(id, null);
+  else if (what.settings) pm.storageClear(id, settingsKeys(p));
+  settings.save();
+  if (wasOpen) openPlugin(id);
+  notifyHub();
+}
+const settingsKeys = (p) => (Array.isArray(p.settingsKeys) ? p.settingsKeys.filter((k) => typeof k === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(k)) : []);
+
 function closePlugin(id) {
   const w = pluginWindows.get(id);
   if (w && !w.isDestroyed()) w.close();
@@ -377,6 +396,13 @@ handleHub("hub:setPluginTheme", (id, tokens) => {
   if (tokens) all[id] = Theme.normalize(tokens, globalTheme()); else delete all[id];
   settings.save();
   broadcastTheme();
+  return state();
+});
+handleHub("hub:resetPlugin", async (id, what) => { await resetPlugin(String(id), what || {}); return state(); });
+handleHub("hub:resetAll", async () => {
+  for (const p of pm.list(localFolders())) {
+    if (p.id && !p.error) await resetPlugin(p.id, { window: true, colours: true, settings: true });
+  }
   return state();
 });
 handleHub("hub:setLocked", (id, locked) => { setLocked(String(id), !!locked); return state(); });

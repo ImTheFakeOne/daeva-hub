@@ -27,6 +27,8 @@ You only install it once. From version 0.3.0 Daeva Hub updates itself: it checks
 
 **Appearance** changes the colours of the hub and every plugin: pick a preset or set each colour, the font, text size and corner roundness, with a live preview. Any plugin can have its own colours instead. Copy a theme code to share it or keep a backup.
 
+**Reset:** **Reset…** on a plugin's card in Installed puts back its window (position, size, see-through, fold, lock), its own colours, its settings, or everything it has saved. **Settings → Reset** does the window, colours and settings of every plugin at once and keeps saved progress.
+
 **Lock (click-through):** the 🔓 on an overlay's title bar, or Lock on its card in Installed, lets clicks go through to the game and hides the title bar. **Ctrl+Alt+L** locks or unlocks every overlay.
 
 Overlay windows show above the game in **borderless / windowed fullscreen**. In exclusive fullscreen Windows doesn't allow anything on top of the game.
@@ -49,6 +51,7 @@ A plugin is a folder with a `manifest.json` and an `index.html`:
 ```
 
 - `id`: lowercase letters, digits and `-`, at most 40 characters.
+- `settingsKeys` (optional): the `a2.storage` keys that hold your plugin's settings, as opposed to the player's data, e.g. `["settings"]`. **Reset… → Its settings** deletes just those.
 - `permissions`: `storage` (save its own data), `notify` (short messages in its window) and `meter` (live DPS numbers from the built-in meter).
 
 The page loads the SDK with `<script src="/_sdk/a2.js"></script>` and gets an `a2` object:

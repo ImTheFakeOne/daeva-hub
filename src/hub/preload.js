@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld("hub", {
   setTheme: call("hub:setTheme"),
   setPluginTheme: call("hub:setPluginTheme"),
   setLocked: call("hub:setLocked"),
+  resetPlugin: call("hub:resetPlugin"),
+  resetAll: call("hub:resetAll"),
   installAppUpdate: call("hub:installAppUpdate"),
   openDataFolder: call("hub:openDataFolder"),
   onChanged: (fn) => { ipcRenderer.on("hub:changed", () => fn()); },

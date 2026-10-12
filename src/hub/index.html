@@ -87,6 +87,10 @@
       <p class="hint">Daeva Hub updates itself: it looks for a new version when it starts and every few hours, downloads it in the background, and asks you to restart. If you don't, it installs the next time you quit.</p>
       <div class="addRow"><span class="grow meta" id="appVersionText"></span><button class="btn" id="appCheckBtn" type="button">Check for a new version</button></div>
 
+      <h2>Reset</h2>
+      <p class="hint">Puts every installed plugin's window (position, size, see-through, fold, lock), its own colours and its settings back to how they started. Saved progress, like your checklist ticks, is kept. To reset one plugin, or its saved data too, use <b>Reset…</b> on its card in Installed.</p>
+      <div class="apActions"><button class="btn" id="resetAllBtn" type="button">Reset every plugin…</button><button class="btn ghost" id="resetAllCancel" type="button" hidden>Cancel</button></div>
+
       <h2>About</h2>
       <p class="hint">Plugins run in their own windows, sandboxed, with no internet access, and never touch the game. Only install plugins from repositories you trust. Daeva Hub checks for plugin updates every time it starts.</p>
       <p class="hint">The DPS meter's capture code comes from <a href="#" id="a2toolsLink">A2Tools</a> (GPL-3.0). It needs <a href="#" id="npcapLink">Npcap</a>, reads the game's network traffic, and never sends anything anywhere.</p>

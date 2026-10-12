@@ -28,6 +28,8 @@ function readManifest(dir) {
     description: String(m.description || "").slice(0, 600),
     permissions: Array.isArray(m.permissions) ? m.permissions.map(String) : [],
     ui: m.ui && typeof m.ui === "object" ? m.ui : {},
+    // storage keys that hold the plugin's settings (not the player's data), for "Reset settings"
+    settingsKeys: Array.isArray(m.settingsKeys) ? m.settingsKeys.map(String).filter((k) => KEY.test(k)).slice(0, 50) : [],
   };
 }
 
@@ -149,6 +151,12 @@ class PluginManager {
   }
   storageGet(id, key) {
     try { return fs.readFileSync(this.dataFile(id, key), "utf8"); } catch (e) { if (e.code === "ENOENT") return null; throw e; }
+  }
+  /** Deletes saved values: the given keys, or (keys = null) everything the plugin saved. */
+  storageClear(id, keys = null) {
+    if (!ID.test(id)) throw new Error("invalid plugin id");
+    if (keys === null) { fs.rmSync(path.join(this.dataDir, id), { recursive: true, force: true }); return; }
+    for (const k of keys) { try { fs.rmSync(this.dataFile(id, k), { force: true }); } catch {} }
   }
   storageSet(id, key, value) {
     const text = String(value);

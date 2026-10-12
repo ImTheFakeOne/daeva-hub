@@ -6,6 +6,9 @@
   let query = "";
   let busy = new Set();          // plugin ids being installed/updated
   let confirmUninstall = null;   // id waiting for a second click
+  let resetFor = null;           // id whose reset choices are showing
+  let resetPick = {};
+  let confirmResetAll = false;
   const $ = (id) => document.getElementById(id);
 
   function el(tag, attrs = {}, ...kids) {
@@ -112,6 +115,8 @@
             on: { click: () => run("Couldn't change that", () => hub.setLocked(p.id, !locked)) } }, locked ? "Unlock" : "Lock (click-through)"));
         }
         actions.append(el("button", { class: "btn ghost", type: "button", on: { click: () => { apTarget = p.id; setTab("appearance"); } } }, "Colours"));
+        actions.append(el("button", { class: "btn ghost", type: "button", "aria-expanded": String(resetFor === p.id),
+          on: { click: () => { resetFor = resetFor === p.id ? null : p.id; resetPick = { window: true, colours: true, settings: true, data: false }; render(); } } }, "Reset…"));
         if (!p.local) {
           if (confirmUninstall === p.id) {
             actions.append(el("span", { class: "confirm" }, "Uninstall? Your saved data is kept.",
@@ -122,6 +127,7 @@
           }
         }
       }
+      const resetBox = resetFor === p.id ? resetPanel(p) : null;
       v.append(el("article", { class: "card" + (p.open ? " running" : "") }, icon(p),
         el("div", { class: "body" },
           el("h3", {}, p.name, el("span", { class: "ver" }, "v" + p.version),
@@ -131,9 +137,39 @@
             (S.theme.pluginThemes || {})[p.id] ? el("span", { class: "tag gold" }, "own colours") : null,
             up ? el("span", { class: "tag gold" }, "update available") : null),
           p.author ? el("p", { class: "meta" }, "by " + p.author) : null,
-          p.description ? el("p", { class: "desc" }, p.description) : null),
+          p.description ? el("p", { class: "desc" }, p.description) : null,
+          resetBox),
         actions));
     }
+  }
+
+  function resetPanel(p) {
+    const own = !!(S.theme.pluginThemes || {})[p.id];
+    const opts = [
+      ["window", "Window: position, size, see-through, fold and lock", true],
+      ["colours", "Its own colours (it goes back to the global ones)", own],
+      ["settings", "Its settings", (p.settingsKeys || []).length > 0],
+      ["data", "Everything it has saved: settings and your progress in it", p.permissions.includes("storage")],
+    ].filter((o) => o[2]);
+    const box = el("div", { class: "resetBox" }, el("p", { class: "strong" }, `Reset ${p.name}`));
+    for (const [key, label] of opts) {
+      const cb = el("input", { type: "checkbox" });
+      cb.checked = !!resetPick[key];
+      cb.addEventListener("change", () => { resetPick[key] = cb.checked; render(); });
+      box.append(el("label", { class: "check" + (key === "data" ? " danger" : "") }, cb, label));
+    }
+    if (resetPick.data) box.append(el("p", { class: "warn" }, "Saved data can't be brought back."));
+    const any = opts.some(([k]) => resetPick[k]);
+    box.append(el("div", { class: "row" },
+      el("button", { class: "btn " + (resetPick.data ? "danger" : "primary"), type: "button", disabled: !any,
+        on: { click: async () => {
+          const what = Object.fromEntries(opts.map(([k]) => [k, !!resetPick[k]]));
+          resetFor = null;
+          const r = await run("Couldn't reset it", () => hub.resetPlugin(p.id, what));
+          if (r) status(`Reset ${p.name}.` + (p.open ? " Its window was reopened." : ""), "ok");
+        } } }, "Reset"),
+      el("button", { class: "btn ghost", type: "button", on: { click: () => { resetFor = null; render(); } } }, "Cancel")));
+    return box;
   }
 
   function renderBrowse() {
@@ -328,6 +364,9 @@
       current: "You have the latest version.",
       error: `Couldn't check for a new version: ${u.error}`,
     }[u.status] || "";
+    $("resetAllBtn").textContent = confirmResetAll ? "Yes, reset every plugin" : "Reset every plugin…";
+    $("resetAllBtn").className = confirmResetAll ? "btn danger" : "btn";
+    $("resetAllCancel").hidden = !confirmResetAll;
     $("appVersionText").textContent = `You have version ${S.version}. ${line}`;
     $("appCheckBtn").disabled = ["checking", "downloading", "dev"].includes(u.status);
     if (u.status === "ready") { $("appCheckBtn").textContent = "Restart to update"; $("appCheckBtn").className = "btn primary"; }
@@ -354,7 +393,7 @@
     renderAppearance();
   }
 
-  function setTab(t) { tab = t; confirmUninstall = null; render(); }
+  function setTab(t) { tab = t; confirmUninstall = null; resetFor = null; confirmResetAll = false; render(); }
 
   // ── wiring ──────────────────────────────────────────────────────────────
   for (const b of document.querySelectorAll(".navItem")) b.addEventListener("click", () => setTab(b.dataset.tab));
@@ -421,6 +460,13 @@
     const r = await run("Couldn't use that theme", () => (apTarget ? hub.setPluginTheme(apTarget, tokens) : hub.setTheme({ preset: S.theme.preset, tokens })));
     if (r) { $("apPasteBox").hidden = true; status("Theme applied.", "ok"); }
   });
+  $("resetAllBtn").addEventListener("click", async () => {
+    if (!confirmResetAll) { confirmResetAll = true; render(); return; }
+    confirmResetAll = false;
+    const r = await run("Couldn't reset the plugins", () => hub.resetAll());
+    if (r) status("Every plugin's window, colours and settings are back to how they started. Your saved progress was kept.", "ok");
+  });
+  $("resetAllCancel").addEventListener("click", () => { confirmResetAll = false; render(); });
   $("dataBtn").addEventListener("click", () => hub.openDataFolder());
   hub.onChanged(async () => { S = await hub.state(); render(); });
 

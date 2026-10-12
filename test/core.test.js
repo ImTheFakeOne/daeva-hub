@@ -163,3 +163,16 @@ test("theme: presets are complete, bad input falls back, variables are produced"
   assert.equal(T.isLight(T.presetTokens("daylight")), true);
   assert.equal(T.isLight(T.presetTokens("daeva-gold")), false);
 });
+
+test("storage: clearing chosen keys keeps the rest; clearing all removes everything", () => {
+  const os = require("os"), fs = require("fs"), path = require("path");
+  const { PluginManager } = require("../src/core/plugins");
+  const pm = new PluginManager(fs.mkdtempSync(path.join(os.tmpdir(), "dh-")), {});
+  pm.storageSet("dps-meter", "settings", "{\"scale\":120}");
+  pm.storageSet("dps-meter", "history", "[]");
+  pm.storageClear("dps-meter", ["settings"]);
+  assert.equal(pm.storageGet("dps-meter", "settings"), null);
+  assert.equal(pm.storageGet("dps-meter", "history"), "[]");
+  pm.storageClear("dps-meter", null);
+  assert.equal(pm.storageGet("dps-meter", "history"), null);
+});
