@@ -6,16 +6,17 @@
       "name": "DPS Meter",
       "author": "ImTheFakeOne",
       "description": "NotMeter-style live DPS for you and your party: target HP, class-coloured bars, combat power, damage share, fight history and screenshots, with settings for every part. Uses Daeva Hub's capture engine (from A2Tools); needs Npcap.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "tags": [
         "dps",
         "meter",
         "combat"
       ],
-      "download": "https://github.com/ImTheFakeOne/daeva-hub/archive/afe93cbba0f9ce542cfb1fba2435bf7145ff0d94.zip",
+      "download": "https://github.com/ImTheFakeOne/daeva-hub/archive/5b0bd5d4afa3af472a76c3a7428abda7b5a4ba25.zip",
       "path": "plugins/dps-meter",
       "icon": "https://raw.githubusercontent.com/ImTheFakeOne/daeva-hub/HEAD/plugins/dps-meter/img/gladiator.png",
-      "repoUrl": "https://github.com/ImTheFakeOne/daeva-hub/tree/main/plugins/dps-meter"
+      "repoUrl": "https://github.com/ImTheFakeOne/daeva-hub/tree/main/plugins/dps-meter",
+      "changelog": "Fight history: 60 fights grouped into dungeon runs; tick fights or runs and save them as a JSON or CSV log for Aion 2 log sites. Needs Daeva Hub 0.6.0."
     },
     {
       "id": "aion2-checklist",
