@@ -52,7 +52,7 @@
       ["sec", "Columns"],
       ["showIcon", "check", "Class icon"],
       ["showRank", "check", "Rank number"],
-      ["showCp", "check", "Combat power"],
+      ["showCp", "check", "Combat power", "The game only sends it in the party list, so it shows when you're in a party. The last one seen for each name is remembered and shown when solo."],
       ["showDamage", "check", "Total damage"],
       ["showDps", "check", "DPS"],
       ["showShare", "check", "Damage share %"],
@@ -230,8 +230,16 @@
       if (p.me && S.meDot) ic.append(el("span", "dot"));
       row.append(ic);
     }
-    row.append(el("span", "nm", nameOf(p, msg)));
-    if (S.showCp && Number(p.combatPower) > 0) { const cp = el("span", "cp"); cp.innerHTML = CP_ICON; cp.append(compact(p.combatPower)); row.append(cp); }
+    const name = nameOf(p, msg);
+    row.append(el("span", "nm", name));
+    const cpInfo = S.showCp ? cpFor(p, name) : { cp: 0 };
+    if (cpInfo.cp > 0) {
+      const cp = el("span", "cp" + (cpInfo.cached ? " cached" : ""));
+      cp.innerHTML = CP_ICON;
+      cp.append(cpInfo.cp >= 1000 ? (cpInfo.cp / 1000).toFixed(1) + "K" : String(cpInfo.cp)); // 74.8K, like the game
+      if (cpInfo.cached) cp.title = "Last combat power seen (from a party list)";
+      row.append(cp);
+    }
     if (S.showDamage) row.append(el("span", "dmg", compact(p.amount)));
     if (S.showDps) row.append(el("span", "dps", fmtDps(p.dps)));
     if (S.showShare) row.append(el("span", "sh", (total ? ((Number(p.amount) || 0) / total) * 100 : 0).toFixed(1) + "%"));
@@ -291,6 +299,22 @@
 
   // ── fight history (last 15 fights, kept with the plugin's data) ─────────
   let history = [];
+  // Combat power, by character name: the game only sends it in the party
+  // roster, so keep the last one seen and show it when solo.
+  let cpCache = {}, cpSaveTimer = 0;
+  function cpFor(p, name) {
+    const live = Number(p.combatPower) || 0;
+    const key = realName(p) || (p.me && name !== "You" ? name : "");
+    if (live > 0) {
+      if (key && cpCache[key] !== live) {
+        cpCache[key] = live;
+        clearTimeout(cpSaveTimer);
+        cpSaveTimer = setTimeout(() => a2.storage.set("cp", cpCache), 2000);
+      }
+      return { cp: live, cached: false };
+    }
+    return key && cpCache[key] ? { cp: cpCache[key], cached: true } : { cp: 0, cached: false };
+  }
   function trackFight(d, list, total) {
     const bt = Number(d.battleTime) || 0;
     // a new fight started (timer went back) → keep the one that ended
@@ -366,6 +390,7 @@
       if (type === "check") {
         input = el("input"); input.type = "checkbox"; input.checked = !!S[key];
         input.onchange = () => { S[key] = input.checked; save(); applySettings(); };
+        if (f[3]) { row.append(input); body.append(row, el("div", "sNote", f[3])); continue; }
       } else if (type === "range") {
         const [, , , min, max, step, unit] = f;
         input = el("input"); input.type = "range"; input.min = min; input.max = max; input.step = step; input.value = S[key];
@@ -423,6 +448,7 @@
   (async () => {
     try { S = { ...D, ...((await a2.storage.get("settings")) || {}) }; } catch {}
     try { history = (await a2.storage.get("history")) || []; } catch {}
+    try { cpCache = (await a2.storage.get("cp")) || {}; } catch {}
     applySettings();
     render({ dps: {} });
     await a2.ready();

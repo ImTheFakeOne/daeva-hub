@@ -124,3 +124,4 @@ button { font: inherit; color: inherit; }
 body.compact .tcard, body.compact .foot { display: none; }
 [hidden] { display: none !important; }
 .sRow input[type=text] { width: 52%; padding: 3px 6px; border-radius: calc(var(--a2-radius) * .5); border: 1px solid var(--a2-border); background: var(--a2-surface-alt); color: var(--a2-text); font: inherit; }
+.row .cp.cached { opacity: .7; }
