@@ -80,3 +80,8 @@ code { font-family: Consolas, ui-monospace, monospace; font-size: .92em; color: 
 .check { display: flex; gap: 8px; align-items: center; }
 .check input { accent-color: var(--gold); width: 16px; height: 16px; }
 #view-settings > .btn { align-self: flex-start; }
+
+.appUpdate { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 9px 12px;
+  border-radius: 8px; border: 1px solid rgba(224,181,85,.55); background: rgba(224,181,85,.1); }
+.appUpdate[hidden] { display: none; }
+.grow { flex: 1; min-width: 0; }

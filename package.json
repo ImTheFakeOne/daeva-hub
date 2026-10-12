@@ -1,7 +1,7 @@
 {
   "name": "daeva-hub",
   "productName": "Daeva Hub",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Plugin launcher for Aion 2 tools: browse, install and update overlay plugins from your own repositories.",
   "main": "src/main.js",
   "author": "ImTheFakeOne",
@@ -46,6 +46,17 @@
         "from": "meter-dist",
         "to": "meter"
       }
+    ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ImTheFakeOne",
+        "repo": "daeva-hub",
+        "releaseType": "release"
+      }
     ]
+  },
+  "dependencies": {
+    "electron-updater": "6.3.9"
   }
 }

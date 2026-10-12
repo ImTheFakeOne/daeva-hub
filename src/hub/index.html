@@ -23,6 +23,10 @@
       <button class="btn" id="checkBtn" type="button">Check for updates</button>
       <button class="btn primary" id="updateAllBtn" type="button">Update all</button>
     </header>
+    <div class="appUpdate" id="appUpdate" hidden>
+      <span id="appUpdateText"></span>
+      <button class="btn primary" id="appUpdateBtn" type="button">Restart to update</button>
+    </div>
     <div class="status" id="status" role="status" hidden></div>
 
     <section class="view" id="view-installed" role="tabpanel"></section>
@@ -40,6 +44,10 @@
       <p class="hint">For making your own plugins: a folder with a <code>manifest.json</code> and <code>index.html</code>. Local plugins load straight from the folder and never update from a repository.</p>
       <button class="btn" id="addFolderBtn" type="button">Add folder…</button>
       <ul class="list" id="folderList"></ul>
+
+      <h2>Daeva Hub updates</h2>
+      <p class="hint">Daeva Hub updates itself: it looks for a new version when it starts and every few hours, downloads it in the background, and asks you to restart. If you don't, it installs the next time you quit.</p>
+      <div class="addRow"><span class="grow meta" id="appVersionText"></span><button class="btn" id="appCheckBtn" type="button">Check for a new version</button></div>
 
       <h2>About</h2>
       <p class="hint">Plugins run in their own windows, sandboxed, with no internet access, and never touch the game. Only install plugins from repositories you trust. Daeva Hub checks for plugin updates every time it starts.</p>

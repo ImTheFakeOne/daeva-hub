@@ -9,6 +9,8 @@ const fs = require("fs");
 const { PluginManager } = require("./core/plugins");
 const { Settings } = require("./core/settings");
 const { fetchRepo, resolveRepoUrl } = require("./core/repos");
+const { createUpdater } = require("./updater");
+let updater = null;
 
 app.setName("Daeva Hub");
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -158,6 +160,7 @@ function state() {
   const installed = pm.list(localFolders()).map((p) => ({ ...p, open: pluginWindows.has(p.id) }));
   return {
     version: app.getVersion(),
+    appUpdate: updater ? updater.state() : { status: "idle" },
     settings: { repos: settings.data.repos, officialRepos: OFFICIAL_REPOS, localFolders: settings.data.localFolders, checkOnStart: settings.data.checkOnStart },
     installed,
     catalog,
@@ -308,6 +311,8 @@ handleHub("hub:removeLocalFolder", (dir) => {
   return state();
 });
 handleHub("hub:setCheckOnStart", (on) => { settings.data.checkOnStart = !!on; settings.save(); return state(); });
+handleHub("hub:checkAppUpdate", async () => { if (updater) await updater.check(); return state(); });
+handleHub("hub:installAppUpdate", () => (updater ? updater.install() : false));
 handleHub("hub:openLink", (url) => {
   const u = new URL(String(url));
   if (u.protocol === "https:") shell.openExternal(u.toString());
@@ -367,6 +372,7 @@ app.whenReady().then(async () => {
   try { pm.builtinDirs = fs.readdirSync(BUILTIN_DIR).map((n) => path.join(BUILTIN_DIR, n)); } catch { pm.builtinDirs = []; }
   protocol.handle("plugin", servePluginFile);
   createHub();
+  updater = createUpdater(() => notifyHub());
   for (const [id, ws] of Object.entries(settings.data.windows)) {
     if (ws.open) { try { openPlugin(id); } catch { ws.open = false; } }
   }

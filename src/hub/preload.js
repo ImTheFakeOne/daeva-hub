@@ -15,6 +15,8 @@ contextBridge.exposeInMainWorld("hub", {
   removeLocalFolder: call("hub:removeLocalFolder"),
   setCheckOnStart: call("hub:setCheckOnStart"),
   openLink: call("hub:openLink"),
+  checkAppUpdate: call("hub:checkAppUpdate"),
+  installAppUpdate: call("hub:installAppUpdate"),
   openDataFolder: call("hub:openDataFolder"),
   onChanged: (fn) => { ipcRenderer.on("hub:changed", () => fn()); },
 });

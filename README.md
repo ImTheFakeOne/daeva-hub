@@ -13,6 +13,8 @@ Daeva Hub never touches the game. Plugins run in their own always-on-top overlay
 
 Download `DaevaHub-Setup-<version>.exe` from the [Releases page](https://github.com/ImTheFakeOne/daeva-hub/releases) and run it. Windows may warn that the installer is from an unknown publisher, because it isn't code-signed: choose **More info → Run anyway**.
 
+You only install it once. From version 0.3.0 Daeva Hub updates itself: it checks for a new version when it starts and every few hours, downloads it in the background, and shows **Restart to update** (if you ignore it, the update installs the next time you quit). **Settings → Daeva Hub updates** checks by hand.
+
 ## Use
 
 1. **Settings → Plugin repositories:** the official repository is always there. To get plugins from other authors, paste their repository address and click **Add**.
@@ -98,7 +100,7 @@ npm test         # the core tests
 npm run dist     # build the Windows installer into dist/
 ```
 
-Every push to `main` makes GitHub Actions build the installer and publish it as the release for the version in `package.json`. To ship a new version, raise `version` there and push.
+Every push to `main` makes GitHub Actions build the installer and publish it, with the `latest.yml` the updater reads, as the release for the version in `package.json`. To ship a new version to everyone, raise `version` there and push: installed copies pick it up on their next check. Pushes that don't change the version replace that release's files, and copies that already have that version don't see them, so always raise the version for a real update.
 
 ## Licence
 

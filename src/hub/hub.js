@@ -189,6 +189,25 @@
     }
   }
 
+  function renderAppUpdate() {
+    const u = S.appUpdate || { status: "idle" };
+    $("appUpdate").hidden = u.status !== "ready";
+    $("appUpdateText").textContent = `Daeva Hub ${u.version} is ready to install.`;
+    const line = {
+      dev: "Running from source: updates are off.",
+      checking: "Looking for a new version…",
+      downloading: `Downloading version ${u.version}… ${u.percent || 0}%`,
+      ready: `Version ${u.version} is downloaded. Restart to update.`,
+      current: "You have the latest version.",
+      error: `Couldn't check for a new version: ${u.error}`,
+    }[u.status] || "";
+    $("appVersionText").textContent = `You have version ${S.version}. ${line}`;
+    $("appCheckBtn").disabled = ["checking", "downloading", "dev"].includes(u.status);
+    if (u.status === "ready") { $("appCheckBtn").textContent = "Restart to update"; $("appCheckBtn").className = "btn primary"; }
+    else { $("appCheckBtn").textContent = "Check for a new version"; $("appCheckBtn").className = "btn"; }
+    return u.status === "downloading" ? ` · downloading update ${u.percent || 0}%` : u.status === "ready" ? " · update ready" : "";
+  }
+
   function render() {
     if (!S) return;
     for (const b of document.querySelectorAll(".navItem")) b.setAttribute("aria-selected", String(b.dataset.tab === tab));
@@ -200,7 +219,7 @@
     ub.textContent = S.updates.length ? `Update all (${S.updates.length})` : "Update all";
     ub.disabled = !S.updates.length || busy.size > 0;
     $("search").hidden = tab === "settings";
-    $("sideFoot").textContent = `Version ${S.version}` + (S.catalog.checkedAt ? ` · checked ${new Date(S.catalog.checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "");
+    $("sideFoot").textContent = `Version ${S.version}` + renderAppUpdate();
     renderInstalled();
     renderBrowse();
     renderSettings();
@@ -239,6 +258,12 @@
   $("addFolderBtn").addEventListener("click", () => run("Couldn't add the folder", () => hub.addLocalFolder()));
   $("a2toolsLink").addEventListener("click", (e) => { e.preventDefault(); hub.openLink("https://github.com/taengu/A2Tools-DPS-Meter"); });
   $("npcapLink").addEventListener("click", (e) => { e.preventDefault(); hub.openLink("https://npcap.com/#download"); });
+  const installAppUpdate = () => { status("Restarting to update…", "info", true); hub.installAppUpdate(); };
+  $("appUpdateBtn").addEventListener("click", installAppUpdate);
+  $("appCheckBtn").addEventListener("click", () => {
+    if (S.appUpdate && S.appUpdate.status === "ready") return installAppUpdate();
+    run("Couldn't check for a new version", () => hub.checkAppUpdate());
+  });
   $("dataBtn").addEventListener("click", () => hub.openDataFolder());
   hub.onChanged(async () => { S = await hub.state(); render(); });
 
