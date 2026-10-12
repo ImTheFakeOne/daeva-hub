@@ -25,7 +25,7 @@ You only install it once. From version 0.3.0 Daeva Hub updates itself: it checks
 3. **Installed:** open, close or uninstall plugins. Each one opens in its own overlay window. Drag it by its title bar, set its background opacity with the slider, and fold its controls away with ▾. Windows remember where you left them and reopen next time.
 4. **Update all** (top right) installs every newer version your repositories list. Daeva Hub checks for updates when it starts, and whenever you click **Check for updates**.
 
-**Appearance** changes the colours of the hub and every plugin: pick a preset or set each colour, the font, text size and corner roundness, with a live preview. Any plugin can have its own colours instead. Copy a theme code to share it or keep a backup.
+**Appearance** changes the colours of the hub and every plugin: pick a preset or set each colour, the transparency of the window background, title bar and cards, the font, text size and corner roundness, with a live preview. Any plugin can have its own colours instead. Copy a theme code to share it or keep a backup.
 
 **Reset:** **Reset…** on a plugin's card in Installed puts back its window (position, size, see-through, fold, lock), its own colours, its settings, or everything it has saved. **Settings → Reset** does the window, colours and settings of every plugin at once and keeps saved progress.
 
@@ -73,7 +73,7 @@ await a2.meter.reset();                            // new fight
 
 The SDK matches the A2Tools DPS Meter's plugin SDK, so plugins written for A2Tools run here too. Plugins can't reach the network, and their scripts and styles must be files in the plugin folder. Keep the page background transparent: the window paints its own panel at the opacity the player picks.
 
-Use the player's colours: the SDK sets CSS variables on `<html>` (and the class `a2-themed`, plus `a2-light` for light themes), and updates them live. They are `--a2-bg`, `--a2-title-bg`, `--a2-title-text`, `--a2-border`, `--a2-surface`, `--a2-surface-alt`, `--a2-text`, `--a2-muted`, `--a2-accent`, `--a2-accent-text`, `--a2-highlight`, `--a2-good`, `--a2-warn`, `--a2-bad` (each also as `-rgb`, e.g. `rgba(var(--a2-accent-rgb), .3)`), and `--a2-font`, `--a2-font-size`, `--a2-radius`, `--a2-border-width`. `a2.on("theme", ({ tokens, light }) => …)` gives the same in script.
+Use the player's colours: the SDK sets CSS variables on `<html>` (and the class `a2-themed`, plus `a2-light` for light themes), and updates them live. They are `--a2-bg`, `--a2-title-bg`, `--a2-title-text`, `--a2-border`, `--a2-surface`, `--a2-surface-alt`, `--a2-text`, `--a2-muted`, `--a2-accent`, `--a2-accent-text`, `--a2-highlight`, `--a2-good`, `--a2-warn`, `--a2-bad` (each also as `-rgb`, e.g. `rgba(var(--a2-accent-rgb), .3)`), and `--a2-font`, `--a2-font-size`, `--a2-radius`, `--a2-border-width`, and the player's transparency as `--a2-bg-alpha`, `--a2-title-alpha`, `--a2-surface-alpha` (0–1; `--a2-surface` and `--a2-surface-alt` already include theirs). `a2.on("theme", ({ tokens, light }) => …)` gives the same in script.
 
 While you work on a plugin, add its folder under **Settings → Local plugin folders**. It loads straight from the folder; close and reopen its window to see your changes.
 

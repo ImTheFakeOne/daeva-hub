@@ -406,9 +406,18 @@ handleHub("hub:removeLocalFolder", (dir) => {
   return state();
 });
 handleHub("hub:setCheckOnStart", (on) => { settings.data.checkOnStart = !!on; settings.save(); return state(); });
+// When Appearance changes the background transparency, overlays follow it
+// again even where their own slider was moved.
+function followThemeOpacity(ids, before, after) {
+  if (before.bgOpacity === after.bgOpacity) return;
+  for (const id of ids) { const w = settings.data.windows[id]; if (w) w.opacity = null; }
+}
 handleHub("hub:setTheme", (t) => {
+  const before = globalTheme();
   const preset = Theme.PRESETS[t && t.preset] ? t.preset : Theme.DEFAULT_PRESET;
   settings.data.theme = { preset, tokens: t && t.tokens ? Theme.normalize(t.tokens, Theme.presetTokens(preset)) : null };
+  const own = settings.data.pluginThemes || {};
+  followThemeOpacity(Object.keys(settings.data.windows).filter((id) => !own[id]), before, globalTheme());
   settings.save();
   broadcastTheme();
   return state();
@@ -416,7 +425,9 @@ handleHub("hub:setTheme", (t) => {
 handleHub("hub:setPluginTheme", (id, tokens) => {
   id = String(id);
   const all = (settings.data.pluginThemes ||= {});
+  const before = themeFor(id).tokens;
   if (tokens) all[id] = Theme.normalize(tokens, globalTheme()); else delete all[id];
+  followThemeOpacity([id], before, themeFor(id).tokens);
   settings.save();
   broadcastTheme();
   return state();
@@ -461,7 +472,7 @@ ipcMain.handle("host:storageSet", (e, key, value) => {
 });
 ipcMain.handle("host:panel", (e, prefs) => {
   const ws = settings.window(pluginOf(e));
-  if (typeof prefs?.opacity === "number") ws.opacity = Math.min(100, Math.max(20, prefs.opacity));
+  if (typeof prefs?.opacity === "number") ws.opacity = Math.min(100, Math.max(0, prefs.opacity));
   if (typeof prefs?.compact === "boolean") ws.compact = prefs.compact;
   settings.save();
   if (prefs?.locked === true) setLocked(pluginOf(e), true);

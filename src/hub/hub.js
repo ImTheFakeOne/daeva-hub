@@ -299,13 +299,15 @@
     const font = el("select", { id: "ap-font", "aria-label": "Font" }, ...T.FONTS.map((f) => el("option", { value: f }, f)));
     font.addEventListener("change", () => setToken("font", font.value));
     fs.append(el("label", { class: "apField" }, el("span", { class: "lbl" }, "Font"), font));
+    const tp = el("fieldset", {}, el("legend", {}, "Transparency"),
+      el("p", { class: "hint apSpan" }, "100% is solid, 0% fully see-through. Changing the window background also resets each overlay's own slider, so they all follow it."));
     for (const [key, n] of Object.entries(T.NUMBERS)) {
       const range = el("input", { type: "range", id: "ap-" + key, min: n.min, max: n.max, step: n.step, "aria-label": n.label });
       const out = el("output", { id: "apo-" + key });
       range.addEventListener("input", () => { out.textContent = range.value + n.unit; setToken(key, Number(range.value)); });
-      fs.append(el("label", { class: "apField" }, el("span", { class: "lbl" }, n.label), range, out));
+      (n.group === "Transparency" ? tp : fs).append(el("label", { class: "apField" }, el("span", { class: "lbl" }, n.label), range, out));
     }
-    box.append(fs);
+    box.append(tp, fs);
     apBuilt = true;
   }
 

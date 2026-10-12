@@ -119,10 +119,10 @@ code { font-family: Consolas, ui-monospace, monospace; font-size: .92em; color: 
 .apCode { width: 100%; min-height: 90px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card2); font: 12px/1.4 Consolas, monospace; resize: vertical; }
 
 /* the preview overlay: drawn only from --a2-* variables, like a real plugin */
-.pv { --alpha: .92; font: var(--a2-font-size)/1.35 var(--a2-font); color: var(--a2-text); border-radius: calc(var(--a2-radius) + 2px); overflow: hidden;
+.pv { --alpha: var(--a2-bg-alpha, .92); font: var(--a2-font-size)/1.35 var(--a2-font); color: var(--a2-text); border-radius: calc(var(--a2-radius) + 2px); overflow: hidden;
   background: rgba(var(--a2-bg-rgb), var(--alpha)); border: var(--a2-border-width) solid var(--a2-border); box-shadow: 0 10px 30px rgba(0,0,0,.35); }
 .pv .pvBar { display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 8px; font-size: 12px; font-weight: 600;
-  background: rgba(var(--a2-title-bg-rgb), var(--alpha)); color: var(--a2-title-text); border-bottom: var(--a2-border-width) solid var(--a2-border); }
+  background: rgba(var(--a2-title-bg-rgb), var(--a2-title-alpha, 1)); color: var(--a2-title-text); border-bottom: var(--a2-border-width) solid var(--a2-border); }
 .pv .pvBar b { color: var(--a2-accent); }
 .pv .pvBar span { flex: 1; }
 .pv .pvBar i { color: var(--a2-muted); font-style: normal; }
@@ -145,3 +145,6 @@ code { font-family: Consolas, ui-monospace, monospace; font-size: .92em; color: 
 .resetBox .check { font-size: 13px; }
 .resetBox .check.danger { color: color-mix(in srgb, var(--red) 55%, var(--fg)); }
 .resetBox .warn { font-size: 12px; color: var(--red); }
+.apControls .apSpan { grid-column: 1 / -1; font-size: 12px; }
+/* show the preview over a "game" so transparency is visible */
+.apBackdrop { background: linear-gradient(135deg, #2b3a4f, #7a5a3a 45%, #3d5a3a 70%, #24323f); }

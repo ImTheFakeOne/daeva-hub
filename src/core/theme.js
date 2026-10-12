@@ -29,9 +29,13 @@
     fontSize: { label: "Text size", min: 10, max: 18, step: 1, unit: "px" },
     radius: { label: "Corner roundness", min: 0, max: 16, step: 1, unit: "px" },
     borderWidth: { label: "Border thickness", min: 0, max: 3, step: 1, unit: "px" },
+    bgOpacity: { label: "Window background", min: 0, max: 100, step: 1, unit: "%", group: "Transparency" },
+    titleOpacity: { label: "Title bar", min: 0, max: 100, step: 1, unit: "%", group: "Transparency" },
+    surfaceOpacity: { label: "Cards and rows", min: 0, max: 100, step: 1, unit: "%", group: "Transparency" },
   };
 
-  const base = { font: "Segoe UI", fontSize: 13, radius: 8, borderWidth: 1 };
+  // Opacity: 100 = solid, 0 = fully see-through.
+  const base = { font: "Segoe UI", fontSize: 13, radius: 8, borderWidth: 1, bgOpacity: 92, titleOpacity: 100, surfaceOpacity: 100 };
   const PRESETS = {
     "daeva-gold": { name: "Daeva Gold", ...base,
       bg: "#0d1119", titleBg: "#0a0e15", titleText: "#e7eaf2", border: "#263044", surface: "#151b27", surfaceAlt: "#1c2434",
@@ -82,6 +86,16 @@
       vars[name] = t[key];
       vars[name + "-rgb"] = rgb(t[key]);
     }
+    // Cards and rows carry their own transparency, so every plugin that uses
+    // --a2-surface gets it without doing anything.
+    const sa = t.surfaceOpacity / 100;
+    if (sa < 1) {
+      vars["--a2-surface"] = `rgba(${rgb(t.surface)}, ${sa})`;
+      vars["--a2-surface-alt"] = `rgba(${rgb(t.surfaceAlt)}, ${sa})`;
+    }
+    vars["--a2-bg-alpha"] = String(t.bgOpacity / 100);
+    vars["--a2-title-alpha"] = String(t.titleOpacity / 100);
+    vars["--a2-surface-alpha"] = String(sa);
     vars["--a2-font"] = `"${t.font}", "Segoe UI", system-ui, sans-serif`;
     vars["--a2-font-size"] = t.fontSize + "px";
     vars["--a2-radius"] = t.radius + "px";

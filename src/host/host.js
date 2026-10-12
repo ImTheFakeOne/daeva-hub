@@ -35,12 +35,13 @@
   const deliver = (event, data) => (ready ? send({ event, data }) : queue.push({ event, data }));
 
   // panel preferences
-  let opacity = info.opacity, compact = info.compact;
+  let opacity = info.opacity, compact = info.compact; // opacity null = follow Appearance
   const opacityEl = document.getElementById("opacity");
   const compactEl = document.getElementById("compact");
   const paint = () => {
-    document.documentElement.style.setProperty("--alpha", String(opacity / 100));
-    opacityEl.value = String(opacity);
+    const eff = opacity == null ? theme.tokens.bgOpacity : opacity;
+    document.documentElement.style.setProperty("--alpha", String(eff / 100));
+    opacityEl.value = String(eff);
     compactEl.setAttribute("aria-pressed", String(compact));
     compactEl.title = compactEl.ariaLabel = compact ? "Show the controls" : "Hide the controls";
   };
@@ -90,7 +91,7 @@
   // Live events from the hub (the DPS meter), for plugins allowed them.
   host.onEvent((msg) => {
     if (!msg || typeof msg.event !== "string") return;
-    if (msg.event === "theme") applyTheme(msg.data);
+    if (msg.event === "theme") { applyTheme(msg.data); host.hello().then((i) => { opacity = i.opacity; paint(); }).catch(() => {}); }
     if (msg.event === "locked") { applyLocked(msg.data, true); return; }
     deliver(msg.event, msg.data);
   });

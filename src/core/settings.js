@@ -18,6 +18,8 @@ class Settings {
     this.file = file;
     this.data = structuredClone(DEFAULTS);
     try { Object.assign(this.data, JSON.parse(fs.readFileSync(file, "utf8"))); } catch {}
+    // 92 was the old fixed default: windows nobody adjusted now follow Appearance.
+    for (const w of Object.values(this.data.windows || {})) if (w && w.opacity === 92) w.opacity = null;
   }
   save() {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
@@ -26,7 +28,7 @@ class Settings {
     fs.renameSync(tmp, this.file);
   }
   window(id) {
-    return (this.data.windows[id] ||= { open: false, bounds: null, opacity: 92, compact: false, locked: false });
+    return (this.data.windows[id] ||= { open: false, bounds: null, opacity: null, compact: false, locked: false });
   }
 }
 
