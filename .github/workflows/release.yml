@@ -1,4 +1,4 @@
-# Builds the Windows installer on every push to main and publishes it as the
+# Builds the Windows installer on every push to main that changes the app and publishes it as the
 # GitHub Release for the version in package.json (v0.1.0, v0.2.0, …). To ship
 # a new version, raise "version" in package.json and push.
 name: Build installer
@@ -6,6 +6,11 @@ name: Build installer
 on:
   push:
     branches: [main]
+    # Plugins update on their own, from repo.json; changing them doesn't make a new app.
+    paths-ignore:
+      - "plugins/**"
+      - "repo.json"
+      - "**.md"
   workflow_dispatch:
 
 permissions:

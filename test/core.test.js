@@ -176,3 +176,24 @@ test("storage: clearing chosen keys keeps the rest; clearing all removes everyth
   pm.storageClear("dps-meter", null);
   assert.equal(pm.storageGet("dps-meter", "history"), null);
 });
+
+test("repos: a plugin folder inside the download is accepted only as a safe relative path", () => {
+  const { normalize } = require("../src/core/repos");
+  const r = normalize({ plugins: [
+    { id: "a", download: "https://x.test/a.zip", path: "plugins/dps-meter" },
+    { id: "b", download: "https://x.test/b.zip", path: "../evil" },
+    { id: "c", download: "https://x.test/c.zip" },
+  ] }, "https://x.test/repo.json");
+  assert.deepEqual(r.plugins.map((p) => p.path), ["plugins/dps-meter", "", ""]);
+});
+
+test("plugins: findSubPath finds a plugin folder inside a GitHub-style archive", () => {
+  const os = require("os"), fs = require("fs"), path = require("path");
+  const { findSubPath } = require("../src/core/plugins");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "dh-"));
+  const dir = path.join(root, "daeva-hub-abc123", "plugins", "dps-meter");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, "manifest.json"), "{}");
+  assert.equal(findSubPath(root, "plugins/dps-meter"), dir);
+  assert.equal(findSubPath(root, "plugins/other"), null);
+});

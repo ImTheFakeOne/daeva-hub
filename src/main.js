@@ -190,8 +190,29 @@ async function refreshCatalog() {
   const plugins = [];
   for (const r of repos) for (const p of r.plugins) plugins.push({ ...p, repoName: r.name || r.input, official: r.official });
   catalog = { repos: repos.map(({ plugins: list, ...rest }) => ({ ...rest, count: list.length })), plugins, checkedAt: new Date().toISOString() };
+  await migrateFormerBuiltins();
   notifyHub();
   return catalog;
+}
+
+// The DPS meter used to ship inside the app. Anyone who had it switched on
+// gets the plugin from the official repository instead, with their settings
+// (same id, same saved data) and its window as they left it.
+async function migrateFormerBuiltins() {
+  const on = settings.data.enabledBuiltins || [];
+  for (const id of on.filter((x) => !isBuiltin(x))) {
+    const entry = catalog.plugins.find((p) => p.id === id && p.official);
+    if (!entry) continue;
+    try {
+      if (!pm.list(localFolders()).some((p) => p.id === id)) {
+        pm.fetch = net.fetch.bind(net);
+        await pm.install(entry);
+      }
+      settings.data.enabledBuiltins = (settings.data.enabledBuiltins || []).filter((x) => x !== id);
+      settings.save();
+      if (settings.window(id).open && !pluginWindows.has(id)) { try { openPlugin(id); } catch {} }
+    } catch { /* try again next start */ }
+  }
 }
 
 // Plugins that ship inside the app (the DPS meter). Nothing is installed for

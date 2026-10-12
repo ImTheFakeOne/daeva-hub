@@ -39,6 +39,13 @@ const httpsUrl = (v) => {
   try { const u = new URL(String(v)); return u.protocol === "https:" ? u.toString() : ""; } catch { return ""; }
 };
 
+// "plugins/dps-meter": relative, forward slashes, no "..", plain names only.
+function subPath(v) {
+  if (typeof v !== "string" || !v.trim()) return "";
+  const parts = v.trim().replace(/^\/+|\/+$/g, "").split("/");
+  return parts.length <= 5 && parts.every((x) => /^[A-Za-z0-9._-]{1,64}$/.test(x) && x !== "." && x !== "..") ? parts.join("/") : "";
+}
+
 function normalize(json, url) {
   const list = Array.isArray(json) ? json : Array.isArray(json?.plugins) ? json.plugins : null;
   if (!list) throw new Error("The repository file has no plugin list.");
@@ -58,6 +65,9 @@ function normalize(json, url) {
       icon: httpsUrl(p.icon ?? p.IconUrl),
       repoUrl: httpsUrl(p.repoUrl ?? p.RepoUrl),
       changelog: str(p.changelog ?? p.Changelog, 2000),
+      // the plugin's folder inside the download, when it isn't at the top
+      // (several plugins, or a plugin next to other code, in one repository)
+      path: subPath(p.path),
       source: url,
     });
   }

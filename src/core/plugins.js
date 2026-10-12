@@ -47,6 +47,18 @@ function findPluginRoot(dir, depth = 0) {
   return null;
 }
 
+/** `sub` (e.g. "plugins/dps-meter") inside the download, or inside its one top folder (GitHub archives have one). */
+function findSubPath(dir, sub) {
+  const rel = sub.split("/");
+  if (rel.some((x) => !x || x === "." || x === "..")) return null;
+  const candidates = [dir, ...fs.readdirSync(dir).map((n) => path.join(dir, n)).filter((d) => fs.statSync(d).isDirectory())];
+  for (const c of candidates) {
+    const p = path.join(c, ...rel);
+    if (p.startsWith(c + path.sep) && fs.existsSync(path.join(p, "manifest.json"))) return p;
+  }
+  return null;
+}
+
 class PluginManager {
   constructor(root, { fetch: fetchFn = fetch } = {}) {
     this.root = root;
@@ -104,7 +116,7 @@ class PluginManager {
     const work = fs.mkdtempSync(path.join(this.tmpDir, entry.id + "-"));
     try {
       extract(buf, path.join(work, "x"));
-      const found = findPluginRoot(path.join(work, "x"));
+      const found = entry.path ? findSubPath(path.join(work, "x"), entry.path) : findPluginRoot(path.join(work, "x"));
       if (!found) throw new Error("The download has no manifest.json.");
       const m = readManifest(found);
       if (m.id !== entry.id) throw new Error(`The download is plugin "${m.id}", not "${entry.id}".`);
@@ -169,4 +181,4 @@ class PluginManager {
   }
 }
 
-module.exports = { PluginManager, readManifest, findPluginRoot };
+module.exports = { PluginManager, readManifest, findPluginRoot, findSubPath };

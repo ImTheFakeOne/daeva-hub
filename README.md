@@ -8,8 +8,8 @@ Daeva Hub never touches the game. Plugins run in their own always-on-top overlay
 
 Daeva Hub starts with nothing installed. Everything is in **Browse**, and you pick what you want:
 
-- **DPS Meter** (ships inside the app): live damage per second for you and your party, styled after NotMeter: target card with HP, class-coloured bars, combat power, DPS and share, fight timer, ping, fight history and a screenshot button. Its ⚙ settings cover layout presets, bar style, row size, columns, names, number formats and every colour, down to each class. It reads the game's network traffic, the same way the A2Tools DPS Meter does (its capture code comes from A2Tools). It needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
-- **Official plugins**, such as the **Aion 2 Checklist**, from this repository's [`repo.json`](repo.json). That repository is always listed, so they show in Browse without adding anything.
+- **DPS Meter**: live damage per second for you and your party, styled after NotMeter: target card with HP, class-coloured bars, combat power, DPS and share, fight timer, ping, fight history and a screenshot button. Its ⚙ settings cover layout presets, bar style, row size, columns, names, number formats and every colour, down to each class. It's a plugin like any other (in [`plugins/dps-meter`](plugins/dps-meter)) and updates with **Update all**; the capture engine it uses is part of the app. The engine reads the game's network traffic the same way the A2Tools DPS Meter does (its code comes from A2Tools) and needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
+- **Official plugins**, such as the DPS Meter and the **Aion 2 Checklist**, from this repository's [`repo.json`](repo.json). That repository is always listed, so they show in Browse without adding anything.
 - **Plugins from other authors**, once you add their repository in Settings.
 
 ## Install
@@ -100,7 +100,7 @@ A repository is one JSON file. Put a `repo.json` at the top of a GitHub reposito
 }
 ```
 
-`download` is a zip containing the plugin folder. A GitHub archive works as it is: of a tag (`…/archive/refs/tags/v1.0.0.zip`) or of a commit (`…/archive/<commit id>.zip`). To release an update: raise `version` in `manifest.json` and push, then change `version` and `download` in `repo.json` to match. Everyone gets it with **Update all**.
+`download` is a zip containing the plugin folder. If the plugin isn't at the top of the zip (say the repository holds several plugins, or other code), add `"path": "plugins/my-plugin"`: the folder inside the zip, or inside its one top folder as in GitHub archives. A GitHub archive works as it is: of a tag (`…/archive/refs/tags/v1.0.0.zip`) or of a commit (`…/archive/<commit id>.zip`). To release an update: raise `version` in `manifest.json` and push, then change `version` and `download` in `repo.json` to match. Everyone gets it with **Update all**.
 
 ## Build it yourself
 
@@ -113,7 +113,7 @@ npm test         # the core tests
 npm run dist     # build the Windows installer into dist/
 ```
 
-Every push to `main` makes GitHub Actions build the installer and publish it, with the `latest.yml` the updater reads, as the release for the version in `package.json`. To ship a new version to everyone, raise `version` there and push: installed copies pick it up on their next check. Pushes that don't change the version replace that release's files, and copies that already have that version don't see them, so always raise the version for a real update.
+Plugin and app updates are separate. Changes to `plugins/`, `repo.json` or documentation don't build a new app: plugins reach players through `repo.json` and **Update all**. Every other push to `main` makes GitHub Actions build the installer and publish it, with the `latest.yml` the updater reads, as the release for the version in `package.json`. To ship a new version to everyone, raise `version` there and push: installed copies pick it up on their next check. Pushes that don't change the version replace that release's files, and copies that already have that version don't see them, so always raise the version for a real update.
 
 ## Licence
 
