@@ -2,6 +2,7 @@
 // A2Tools). Every look-and-feel choice is a setting, saved with a2.storage.
 (() => {
   const $ = (id) => document.getElementById(id);
+  const DUNGEONS = window.DUNGEONS || {};
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
   // job names arrive in Korean from the parser
@@ -297,7 +298,7 @@
     trackFight(d, list, total);
   }
 
-  // ── fight history (last 15 fights, kept with the plugin's data) ─────────
+  // ── fight history (last 60 fights, kept with the plugin's data) ─────────
   let history = [];
   // Combat power, by character name: the game only sends it in the party
   // roster, so keep the last one seen and show it when solo.
@@ -315,44 +316,185 @@
     }
     return key && cpCache[key] ? { cp: cpCache[key], cached: true } : { cp: 0, cached: false };
   }
+  // A fight is kept when the next one starts, when you reset, and (if the
+  // window closes mid-fight) the next time the meter opens.
+  const HISTORY_MAX = 60;
+  let pendingTimer = 0;
   function trackFight(d, list, total) {
     const bt = Number(d.battleTime) || 0;
-    // a new fight started (timer went back) → keep the one that ended
-    if (fight && bt + 1000 < fight.time) keepFight();
+    if (fight && bt + 1000 < fight.durationMs) keepFight(); // the timer went back: a new fight
     if (bt > 0 && total > 0) {
-      fight = { at: Date.now(), target: d.targetName || "Unknown target", boss: !!d.targetIsBoss, time: bt, total,
-        rows: list.slice(0, 12).map((p) => ({ name: nameOf(p, last), cls: (CLASSES[p.job] || {}).key || "", dps: Number(p.dps) || 0, amount: Number(p.amount) || 0, me: p.me })) };
+      const dungeonId = Number(d.dungeonId) || 0;
+      const dg = DUNGEONS[String(dungeonId)];
+      const now = Date.now();
+      fight = {
+        v: 2,
+        start: fight && fight.start ? fight.start : now - bt,
+        end: now,
+        durationMs: bt,
+        dungeonId,
+        dungeon: dg ? dg.name + (dg.difficulty ? ` (${dg.difficulty})` : "") : "",
+        target: { name: d.targetName || "Unknown target", id: d.targetId ?? null, mobCode: d.targetMobCode ?? null, boss: !!d.targetIsBoss,
+          maxHp: Number(d.targetMaxHp) || null, hpLeft: Number.isFinite(Number(d.targetCurrentHp)) ? Number(d.targetCurrentHp) : null },
+        totalDamage: total,
+        partyDps: list.reduce((s, p) => s + (Number(p.dps) || 0), 0),
+        players: list.slice(0, 24).map((p) => {
+          const cls = CLASSES[p.job];
+          const name = nameOf(p, last);
+          return { name, class: cls ? cls.name : (p.job || "Unknown"), you: !!p.me, dps: Math.round(Number(p.dps) || 0),
+            damage: Math.round(Number(p.amount) || 0), share: total ? +(((Number(p.amount) || 0) / total) * 100).toFixed(2) : 0,
+            combatPower: cpFor(p, name).cp || null, supporter: !!p.isSupporter };
+        }),
+      };
+      clearTimeout(pendingTimer);
+      pendingTimer = setTimeout(() => a2.storage.set("pending", fight), 3000);
     }
   }
   function keepFight() {
-    if (fight && fight.time >= 5000) {
+    if (fight && fight.durationMs >= 5000) {
       history.unshift(fight);
-      history = history.slice(0, 15);
+      history = history.slice(0, HISTORY_MAX);
       a2.storage.set("history", history);
       if (!$("history").hidden) renderHistory();
     }
     fight = null;
+    clearTimeout(pendingTimer);
+    a2.storage.set("pending", null);
   }
+  // fights saved by older versions of the meter
+  const upgrade = (f) => f && f.v === 2 ? f : {
+    v: 2, start: (f.at || Date.now()) - (f.time || 0), end: f.at || Date.now(), durationMs: f.time || 0, dungeonId: 0, dungeon: "",
+    target: { name: f.target || "Unknown target", boss: !!f.boss }, totalDamage: f.total || 0, partyDps: 0,
+    players: (f.rows || []).map((r) => ({ name: r.name, class: CLASS_LABEL[r.cls] || "Unknown", you: !!r.me, dps: r.dps, damage: r.amount,
+      share: f.total ? +((r.amount / f.total) * 100).toFixed(2) : 0, combatPower: null, supporter: false })),
+  };
+
+  // Runs: fights next to each other in the same dungeon (or outside dungeons).
+  const runsOf = (list) => {
+    const runs = [];
+    for (let i = 0; i < list.length; i++) {
+      const f = list[i], prev = runs[runs.length - 1];
+      const near = prev && Math.abs(list[prev.fights[prev.fights.length - 1]].start - f.end) < 45 * 60 * 1000;
+      if (prev && prev.dungeonId === f.dungeonId && near) prev.fights.push(i);
+      else runs.push({ dungeonId: f.dungeonId, name: f.dungeon || "Outside dungeons", fights: [i] });
+    }
+    for (const r of runs) r.fights = r.fights.map((i) => ({ i, f: list[i] }));
+    return runs;
+  };
+
+  let picked = new Set(); // start times of the fights ticked for saving
+  let saveFormat = "json";
+  const keyOf = (f) => String(f.start);
+  const hhmm = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
   function renderHistory() {
     const body = $("histBody");
-    if (!history.length) { body.replaceChildren(el("p", "sNote", "Fights longer than 5 seconds are kept here when the next one starts or you reset.")); return; }
-    body.replaceChildren(...history.map((f) => {
-      const box = el("div", "hist");
-      const head = el("button");
-      head.type = "button";
-      const when = new Date(f.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      head.append(el("b", "", (f.boss ? "★ " : "") + f.target), el("span", "", `${mmss(f.time)} · ${compact(f.total)} · ${when}`));
-      const ol = el("ol");
-      ol.hidden = true;
-      for (const r of f.rows) {
-        const li = el("li", r.me ? "me" : "");
-        li.append(el("span", "", r.name), el("span", "num", `${compact(r.dps)}/s · ${(f.total ? (r.amount / f.total) * 100 : 0).toFixed(1)}%`));
-        ol.append(li);
+    if (!history.length) {
+      body.replaceChildren(el("p", "sNote", "Fights longer than 5 seconds are kept here when the next one starts or you reset. Tick fights or whole dungeon runs, then save them as a log file to upload to an Aion 2 log site."));
+      renderSaveBar();
+      return;
+    }
+    const nodes = [];
+    for (const run of runsOf(history)) {
+      const keys = run.fights.map(({ f }) => keyOf(f));
+      const all = keys.every((k) => picked.has(k)), some = keys.some((k) => picked.has(k));
+      const runBox = el("div", "run");
+      const rh = el("label", "runHead");
+      const rcb = el("input"); rcb.type = "checkbox"; rcb.checked = all; rcb.indeterminate = some && !all;
+      rcb.onchange = () => { for (const k of keys) rcb.checked ? picked.add(k) : picked.delete(k); renderHistory(); };
+      const first = run.fights[run.fights.length - 1].f, lastF = run.fights[0].f;
+      rh.append(rcb, el("b", "", run.name), el("span", "", `${run.fights.length} fight${run.fights.length === 1 ? "" : "s"} · ${hhmm(first.start)}–${hhmm(lastF.end)}`));
+      runBox.append(rh);
+      for (const { f } of run.fights) {
+        const box = el("div", "hist");
+        const head = el("div", "histHead");
+        const cb = el("input"); cb.type = "checkbox"; cb.checked = picked.has(keyOf(f));
+        cb.setAttribute("aria-label", "Select " + f.target.name);
+        cb.onchange = () => { cb.checked ? picked.add(keyOf(f)) : picked.delete(keyOf(f)); renderHistory(); };
+        const btn = el("button");
+        btn.type = "button";
+        btn.append(el("b", "", (f.target.boss ? "★ " : "") + f.target.name), el("span", "", `${mmss(f.durationMs)} · ${compact(f.totalDamage)} · ${hhmm(f.end)}`));
+        const ol = el("ol");
+        ol.hidden = true;
+        for (const r of f.players) {
+          const li = el("li", r.you ? "me" : "");
+          li.append(el("span", "", r.name), el("span", "num", `${compact(r.dps)}/s · ${Number(r.share).toFixed(1)}%`));
+          ol.append(li);
+        }
+        btn.onclick = () => { ol.hidden = !ol.hidden; };
+        head.append(cb, btn);
+        box.append(head, ol);
+        runBox.append(box);
       }
-      head.onclick = () => { ol.hidden = !ol.hidden; };
-      box.append(head, ol);
-      return box;
-    }));
+      nodes.push(runBox);
+    }
+    body.replaceChildren(...nodes);
+    renderSaveBar();
+  }
+
+  function renderSaveBar() {
+    const bar = $("histFoot");
+    const n = history.filter((f) => picked.has(keyOf(f))).length;
+    const allBtn = el("button", "sBtn", n === history.length && n ? "Clear" : "Select all");
+    allBtn.type = "button";
+    allBtn.disabled = !history.length;
+    allBtn.onclick = () => { if (n === history.length) picked.clear(); else for (const f of history) picked.add(keyOf(f)); renderHistory(); };
+    const fmt = el("select");
+    for (const [v, t] of [["json", "JSON (full detail)"], ["csv", "CSV (spreadsheet)"]]) { const o = el("option", "", t); o.value = v; fmt.append(o); }
+    fmt.value = saveFormat;
+    fmt.onchange = () => { saveFormat = fmt.value; };
+    const save = el("button", "sBtn primary", n ? `Save log (${n})` : "Save log");
+    save.type = "button";
+    save.disabled = !n;
+    save.onclick = () => saveLog(history.filter((f) => picked.has(keyOf(f))));
+    bar.replaceChildren(allBtn, fmt, save);
+  }
+
+  // ── log files ───────────────────────────────────────────────────────────
+  const csvCell = (v) => { const t = v == null ? "" : String(v); return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+  function logJson(fights) {
+    return JSON.stringify({
+      format: "daeva-hub-dps-log", formatVersion: 1, exportedAt: new Date().toISOString(),
+      source: { app: "Daeva Hub", plugin: "DPS Meter", parser: "A2Tools DPS Meter (GPL-3.0)" },
+      fights: fights.slice().reverse().map((f) => ({
+        start: new Date(f.start).toISOString(), end: new Date(f.end).toISOString(), durationMs: f.durationMs,
+        dungeon: f.dungeonId ? { id: f.dungeonId, name: f.dungeon || null } : null,
+        target: f.target, totalDamage: f.totalDamage, partyDps: Math.round(f.partyDps || 0), players: f.players,
+      })),
+    }, null, 2);
+  }
+  function logCsv(fights) {
+    const head = ["fight", "start", "end", "duration_s", "dungeon_id", "dungeon", "target", "boss", "target_max_hp", "player", "class", "you", "dps", "damage", "share_pct", "combat_power"];
+    const lines = [head.join(",")];
+    fights.slice().reverse().forEach((f, i) => {
+      for (const p of f.players) {
+        lines.push([i + 1, new Date(f.start).toISOString(), new Date(f.end).toISOString(), (f.durationMs / 1000).toFixed(1), f.dungeonId || "", f.dungeon,
+          f.target.name, f.target.boss ? 1 : 0, f.target.maxHp ?? "", p.name, p.class, p.you ? 1 : 0, p.dps, p.damage, p.share, p.combatPower ?? ""].map(csvCell).join(","));
+      }
+    });
+    return lines.join("\r\n") + "\r\n";
+  }
+  async function saveLog(fights) {
+    if (!a2.files) { showNotice("error", "Saving logs needs a newer Daeva Hub. It updates itself: restart it, then try again."); return; }
+    const dg = [...new Set(fights.map((f) => f.dungeon).filter(Boolean))];
+    const stamp = new Date(fights[0].end).toISOString().slice(0, 16).replace(/[:T]/g, "-");
+    const name = `dps-${(dg.length === 1 ? dg[0] : "fights").replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase()}-${stamp}.${saveFormat}`;
+    try {
+      const r = await a2.files.save(name, saveFormat === "csv" ? logCsv(fights) : logJson(fights), saveFormat);
+      if (r && r.saved) savedNotice(r, fights.length);
+    } catch (e) {
+      showNotice("error", "Couldn't save the log: " + e.message);
+    }
+  }
+  function savedNotice(r, n) {
+    const body = $("histBody");
+    const note = el("div", "saved");
+    note.append(el("span", "", `Saved ${n} fight${n === 1 ? "" : "s"} as ${r.name}.`));
+    const b = el("button", "sBtn", "Show in folder");
+    b.type = "button";
+    b.onclick = () => a2.files.reveal(r.id);
+    note.append(b);
+    body.prepend(note);
   }
 
   // ── settings panel ──────────────────────────────────────────────────────
@@ -447,7 +589,12 @@
 
   (async () => {
     try { S = { ...D, ...((await a2.storage.get("settings")) || {}) }; } catch {}
-    try { history = (await a2.storage.get("history")) || []; } catch {}
+    try { history = ((await a2.storage.get("history")) || []).map(upgrade); } catch {}
+    try {
+      const pending = await a2.storage.get("pending"); // a fight still going when the window closed
+      if (pending && pending.durationMs >= 5000 && !history.some((f) => f.start === pending.start)) { history.unshift(pending); history = history.slice(0, HISTORY_MAX); a2.storage.set("history", history); }
+      a2.storage.set("pending", null);
+    } catch {}
     try { cpCache = (await a2.storage.get("cp")) || {}; } catch {}
     applySettings();
     render({ dps: {} });

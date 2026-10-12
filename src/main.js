@@ -488,6 +488,36 @@ ipcMain.handle("host:screenshot", async (e) => {
   fs.writeFileSync(path.join(dir, name), img.toPNG());
   return { name };
 });
+// Saving files for plugins (permission "save"): always through a Save dialog,
+// so the player picks the place. Plugins only get back the file name and a
+// token they can use to show it in its folder.
+const savedFiles = new Map(); // token → full path
+const SAVE_TYPES = { json: ["JSON", "application/json"], csv: ["CSV", "text/csv"], txt: ["Text", "text/plain"] };
+ipcMain.handle("host:saveFile", async (e, name, text, type) => {
+  const id = pluginOf(e);
+  if (!findPlugin(id).permissions.includes("save")) throw new Error('the plugin lacks the "save" permission');
+  const ext = SAVE_TYPES[type] ? type : "txt";
+  const body = String(text ?? "");
+  if (body.length > 20 * 1024 * 1024) throw new Error("that file is larger than 20 MB");
+  let base = String(name || "").replace(/[\\/:*?"<>|\x00-\x1f]/g, "-").replace(/^\.+/, "").trim().slice(0, 120) || "file";
+  if (!base.toLowerCase().endsWith("." + ext)) base += "." + ext;
+  const dir = path.join(app.getPath("documents"), "Daeva Hub", id);
+  fs.mkdirSync(dir, { recursive: true });
+  const r = await dialog.showSaveDialog(pluginWindows.get(id), {
+    title: "Save", defaultPath: path.join(dir, base), filters: [{ name: SAVE_TYPES[ext][0], extensions: [ext] }],
+  });
+  if (r.canceled || !r.filePath) return { saved: false };
+  fs.writeFileSync(r.filePath, body, "utf8");
+  const token = require("crypto").randomUUID();
+  savedFiles.set(token, r.filePath);
+  return { saved: true, name: path.basename(r.filePath), id: token };
+});
+ipcMain.handle("host:revealFile", (e, token) => {
+  pluginOf(e);
+  const file = savedFiles.get(String(token));
+  if (file && fs.existsSync(file)) shell.showItemInFolder(file);
+  return !!file;
+});
 ipcMain.handle("host:close", (e) => { closePlugin(pluginOf(e)); return true; });
 ipcMain.handle("host:meter", (e, cmd, arg) => {
   const id = pluginOf(e);

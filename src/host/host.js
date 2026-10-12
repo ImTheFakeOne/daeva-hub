@@ -71,6 +71,8 @@
     "meter.installNpcap": () => host.meter("npcap"),
     "meter.setName": ([name]) => host.meter("name", String(name || "")),
     "theme.get": () => theme,
+    "files.save": ([name, text, type]) => { if (!allowed("save")) throw new Error('the plugin lacks the "save" permission'); return host.saveFile(name, text, type); },
+    "files.reveal": ([id]) => host.revealFile(id),
     "window.screenshot": async () => { const r = await host.screenshot(); showToast(`Screenshot copied, and saved as ${r.name}`); return true; },
     "window.show": () => true,
     "window.hide": () => true,

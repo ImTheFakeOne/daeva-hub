@@ -8,7 +8,7 @@ Daeva Hub never touches the game. Plugins run in their own always-on-top overlay
 
 Daeva Hub starts with nothing installed. Everything is in **Browse**, and you pick what you want:
 
-- **DPS Meter**: live damage per second for you and your party, styled after NotMeter: target card with HP, class-coloured bars, combat power, DPS and share, fight timer, ping, fight history and a screenshot button. Its ⚙ settings cover layout presets, bar style, row size, columns, names, number formats and every colour, down to each class. It's a plugin like any other (in [`plugins/dps-meter`](plugins/dps-meter)) and updates with **Update all**; the capture engine it uses is part of the app. The engine reads the game's network traffic the same way the A2Tools DPS Meter does (its code comes from A2Tools) and needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
+- **DPS Meter**: live damage per second for you and your party, styled after NotMeter: target card with HP, class-coloured bars, combat power, DPS and share, fight timer, ping, fight history and a screenshot button. Its ⚙ settings cover layout presets, bar style, row size, columns, names, number formats and every colour, down to each class. Its fight history keeps your last 60 fights grouped into dungeon runs: tick fights or whole runs and **Save log** as JSON (full detail) or CSV, to keep or upload to an Aion 2 log site. It's a plugin like any other (in [`plugins/dps-meter`](plugins/dps-meter)) and updates with **Update all**; the capture engine it uses is part of the app. The engine reads the game's network traffic the same way the A2Tools DPS Meter does (its code comes from A2Tools) and needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
 - **Official plugins**, such as the DPS Meter and the **Aion 2 Checklist**, from this repository's [`repo.json`](repo.json). That repository is always listed, so they show in Browse without adding anything.
 - **Plugins from other authors**, once you add their repository in Settings.
 
@@ -52,7 +52,7 @@ A plugin is a folder with a `manifest.json` and an `index.html`:
 
 - `id`: lowercase letters, digits and `-`, at most 40 characters.
 - `settingsKeys` (optional): the `a2.storage` keys that hold your plugin's settings, as opposed to the player's data, e.g. `["settings"]`. **Reset… → Its settings** deletes just those.
-- `permissions`: `storage` (save its own data), `notify` (short messages in its window) and `meter` (live DPS numbers from the built-in meter).
+- `permissions`: `storage` (save its own data), `notify` (short messages in its window), `meter` (live DPS numbers from the built-in meter) and `save` (save files the player chooses where to put, through a Save dialog).
 
 The page loads the SDK with `<script src="/_sdk/a2.js"></script>` and gets an `a2` object:
 
@@ -63,6 +63,8 @@ a2.notify("Saved!");
 a2.on("compact", (on) => { /* hide your controls */ });
 a2.ready();                                        // call once your handlers are set
 await a2.window.screenshot();                      // copy this window to the clipboard
+const f = await a2.files.save("log.json", text, "json"); // "save" permission: Save dialog → { saved, name, id }
+if (f.saved) a2.files.reveal(f.id);                // show it in its folder
 
 // with the "meter" permission:
 a2.on("meter", ({ dps, ping, me }) => { /* dps.map, dps.targetName, dps.battleTime … twice a second */ });

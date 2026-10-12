@@ -10,6 +10,7 @@
 //   a2.meter.start() / a2.meter.reset()  the DPS meter (permission "meter")
 //   a2.on("theme", ({tokens, vars, light}) => …)  the player's colours (also set
 //                                      as CSS variables --a2-bg, --a2-accent, … on <html>)
+//   await a2.files.save(name, text, type)  save a file the player picks (permission "save")
 //   a2.ready()                         call once your handlers are set
 (() => {
   const handlers = {};
@@ -67,6 +68,13 @@
       status: () => call("meter.status", []),
       installNpcap: () => call("meter.installNpcap", []),
       setName: (name) => call("meter.setName", [String(name || "")]), // your character's name, until the game says it
+    }),
+    // Permission "save": files.save(name, text, "json"|"csv"|"txt") asks the player
+    // where to save (Documents\Daeva Hub\<plugin> by default) and returns
+    // { saved, name, id }; files.reveal(id) shows that file in its folder.
+    files: Object.freeze({
+      save: (name, text, type) => call("files.save", [String(name), String(text), String(type || "txt")]),
+      reveal: (id) => call("files.reveal", [String(id)]),
     }),
     ready: () => call("ready", []),
   });

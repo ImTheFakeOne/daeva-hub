@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld("host", {
   panel: (prefs) => ipcRenderer.invoke("host:panel", prefs),
   close: () => ipcRenderer.invoke("host:close"),
   screenshot: () => ipcRenderer.invoke("host:screenshot"),
+  saveFile: (name, text, type) => ipcRenderer.invoke("host:saveFile", name, text, type),
+  revealFile: (id) => ipcRenderer.invoke("host:revealFile", id),
   openHub: () => ipcRenderer.invoke("host:openHub"),
   meter: (cmd, arg) => ipcRenderer.invoke("host:meter", cmd, arg),
   onEvent: (fn) => { ipcRenderer.on("host:event", (_e, msg) => fn(msg)); },

@@ -125,3 +125,21 @@ body.compact .tcard, body.compact .foot { display: none; }
 [hidden] { display: none !important; }
 .sRow input[type=text] { width: 52%; padding: 3px 6px; border-radius: calc(var(--a2-radius) * .5); border: 1px solid var(--a2-border); background: var(--a2-surface-alt); color: var(--a2-text); font: inherit; }
 .row .cp.cached { opacity: .7; }
+
+/* history: runs of fights, tick to save */
+.run { display: flex; flex-direction: column; gap: 4px; }
+.runHead { display: flex; align-items: center; gap: 7px; padding: 4px 2px 0; cursor: pointer; }
+.runHead b { color: var(--a2-accent); }
+.runHead span { color: var(--a2-muted); font-size: .8em; margin-left: auto; white-space: nowrap; }
+.histHead { display: flex; align-items: stretch; background: var(--a2-surface-alt); }
+.histHead input { margin: 0 4px 0 8px; align-self: center; }
+.histHead button { flex: 1; min-width: 0; display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px 6px 4px; border: 0; background: transparent; cursor: pointer; text-align: left; }
+.histHead button b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.histHead button span { color: var(--a2-muted); font-size: .85em; white-space: nowrap; }
+input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--a2-accent); }
+#histFoot select { padding: 3px 6px; border-radius: calc(var(--a2-radius) * .5); border: 1px solid var(--a2-border); background: var(--a2-surface-alt); color: var(--a2-text); font: inherit; }
+#histFoot .primary { margin-left: auto; }
+.sBtn.primary { background: var(--a2-accent); border-color: var(--a2-accent); color: var(--a2-accent-text); font-weight: 700; }
+.sBtn:disabled { opacity: .45; cursor: default; }
+.saved { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border-radius: calc(var(--a2-radius) * .6);
+  background: color-mix(in srgb, var(--a2-good) 14%, transparent); border: 1px solid color-mix(in srgb, var(--a2-good) 45%, transparent); }

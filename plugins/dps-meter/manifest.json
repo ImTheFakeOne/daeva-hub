@@ -1,13 +1,14 @@
 {
   "id": "dps-meter",
   "name": "DPS Meter",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "apiVersion": 2,
   "author": "ImTheFakeOne",
   "description": "NotMeter-style live DPS for you and your party: target HP, class bars, combat power, share, history. Uses Daeva Hub's built-in capture engine (from A2Tools); needs Npcap.",
   "permissions": [
     "meter",
-    "storage"
+    "storage",
+    "save"
   ],
   "decoders": [],
   "ui": {
