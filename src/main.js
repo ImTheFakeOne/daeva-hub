@@ -135,26 +135,40 @@ async function refreshCatalog() {
   const plugins = [];
   for (const r of repos) for (const p of r.plugins) plugins.push({ ...p, repoName: r.name || r.input, official: r.official });
   catalog = { repos: repos.map(({ plugins: list, ...rest }) => ({ ...rest, count: list.length })), plugins, checkedAt: new Date().toISOString() };
-  await installOfficialPlugins();
   notifyHub();
   return catalog;
 }
 
-// Official plugins are installed once, automatically. If the user uninstalls
-// one, it stays uninstalled (it is remembered in autoInstalled).
-async function installOfficialPlugins() {
-  const done = (settings.data.autoInstalled ||= []);
-  const have = new Set(pm.list(localFolders()).map((p) => p.id));
-  for (const entry of catalog.plugins.filter((p) => p.official)) {
-    if (have.has(entry.id) || done.includes(entry.id)) continue;
-    try {
-      pm.fetch = net.fetch.bind(net);
-      await pm.install(entry);
-      done.push(entry.id);
-      settings.save();
-    } catch { /* try again next time */ }
+// Plugins that ship inside the app (the DPS meter). Nothing is installed for
+// you: they are listed in Browse like any other plugin, and "Install" just
+// switches one on (settings.enabledBuiltins).
+let builtins = []; // [{ dir, manifest }]
+function loadBuiltins() {
+  builtins = [];
+  let names = [];
+  try { names = fs.readdirSync(BUILTIN_DIR); } catch {}
+  for (const n of names) {
+    const dir = path.join(BUILTIN_DIR, n);
+    try { builtins.push({ dir, manifest: JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8")) }); } catch {}
   }
+  syncBuiltins();
 }
+const isBuiltin = (id) => builtins.some((b) => b.manifest.id === id);
+function syncBuiltins() {
+  const on = (settings.data.enabledBuiltins ||= []);
+  pm.builtinDirs = builtins.filter((b) => on.includes(b.manifest.id)).map((b) => b.dir);
+}
+function setBuiltinEnabled(id, enabled) {
+  const on = (settings.data.enabledBuiltins ||= []).filter((x) => x !== id);
+  if (enabled) on.push(id);
+  settings.data.enabledBuiltins = on;
+  settings.save();
+  syncBuiltins();
+}
+const builtinEntries = () => builtins.map(({ manifest: m }) => ({
+  id: m.id, name: m.name, author: m.author || "", description: m.description || "", version: m.version,
+  tags: m.tags || [], official: true, builtin: true, repoName: "Daeva Hub (built in)",
+}));
 
 function state() {
   const installed = pm.list(localFolders()).map((p) => ({ ...p, open: pluginWindows.has(p.id) }));
@@ -163,7 +177,7 @@ function state() {
     appUpdate: updater ? updater.state() : { status: "idle" },
     settings: { repos: settings.data.repos, officialRepos: OFFICIAL_REPOS, localFolders: settings.data.localFolders, checkOnStart: settings.data.checkOnStart },
     installed,
-    catalog,
+    catalog: { ...catalog, plugins: [...builtinEntries(), ...catalog.plugins] },
     updates: pm.updates(catalog.plugins, localFolders()).map((u) => ({ id: u.installed.id, from: u.installed.version, to: u.available.version })),
   };
 }
@@ -173,6 +187,7 @@ function notifyHub() {
 }
 
 async function installOrUpdate(id) {
+  if (isBuiltin(id)) { setBuiltinEnabled(id, true); notifyHub(); return; }
   const entry = catalog.plugins.filter((p) => p.id === id).sort((a, b) => require("./core/version").compare(b.version, a.version))[0];
   if (!entry) throw new Error("That plugin isn't in any of your repositories.");
   const wasOpen = pluginWindows.has(id);
@@ -273,8 +288,8 @@ handleHub("hub:install", async (id) => { await installOrUpdate(String(id)); retu
 handleHub("hub:updateAll", async () => { const results = await updateAll(); return { results, state: state() }; });
 handleHub("hub:uninstall", (id, keepData) => {
   const p = findPlugin(String(id));
-  if (p && p.builtin) throw new Error("Built-in plugins can't be uninstalled.");
   closePlugin(String(id));
+  if (p && p.builtin) { setBuiltinEnabled(String(id), false); notifyHub(); return state(); }
   pm.uninstall(String(id), { keepData: keepData !== false });
   notifyHub();
   return state();
@@ -369,7 +384,7 @@ app.whenReady().then(async () => {
   const root = app.getPath("userData");
   settings = new Settings(path.join(root, "settings.json"));
   pm = new PluginManager(root, { fetch: net.fetch.bind(net) });
-  try { pm.builtinDirs = fs.readdirSync(BUILTIN_DIR).map((n) => path.join(BUILTIN_DIR, n)); } catch { pm.builtinDirs = []; }
+  loadBuiltins();
   protocol.handle("plugin", servePluginFile);
   createHub();
   updater = createUpdater(() => notifyHub());

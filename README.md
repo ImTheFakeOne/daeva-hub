@@ -4,10 +4,13 @@ A plugin launcher for Aion 2 tools, in the spirit of Dalamud: browse plugins fro
 
 Daeva Hub never touches the game. Plugins run in their own always-on-top overlay windows, sandboxed, with no internet access.
 
-## What comes with it
+## What you can install
 
-- **DPS Meter** (built in): live damage per second for you and your party, with the target's HP, fight time and ping. It reads the game's network traffic, the same way the A2Tools DPS Meter does (its capture code comes from A2Tools). It needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
-- **Official plugins**, such as the **Aion 2 Checklist**, install themselves the first time Daeva Hub starts and update like any other plugin. They are listed in this repository's [`repo.json`](repo.json). If you uninstall one, it stays uninstalled; reinstall it from **Browse**.
+Daeva Hub starts with nothing installed. Everything is in **Browse**, and you pick what you want:
+
+- **DPS Meter** (ships inside the app): live damage per second for you and your party, with the target's HP, fight time and ping. It reads the game's network traffic, the same way the A2Tools DPS Meter does (its capture code comes from A2Tools). It needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
+- **Official plugins**, such as the **Aion 2 Checklist**, from this repository's [`repo.json`](repo.json). That repository is always listed, so they show in Browse without adding anything.
+- **Plugins from other authors**, once you add their repository in Settings.
 
 ## Install
 

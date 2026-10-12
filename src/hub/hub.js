@@ -87,9 +87,8 @@
     if (!S.installed.length) {
       v.append(el("div", { class: "empty" },
         el("p", {}, "No plugins installed yet."),
-        el("p", { class: "hint" }, "Add a repository in Settings, then install plugins from Browse."),
-        el("button", { class: "btn primary", type: "button", on: { click: () => setTab(S.settings.repos.length ? "browse" : "settings") } },
-          S.settings.repos.length ? "Browse plugins" : "Add a repository")));
+        el("p", { class: "hint" }, "Pick the ones you want from Browse."),
+        el("button", { class: "btn primary", type: "button", on: { click: () => setTab("browse") } }, "Browse plugins")));
       return;
     }
     if (!list.length) { v.append(el("p", { class: "empty" }, `No installed plugin matches “${query}”.`)); return; }
@@ -107,7 +106,7 @@
         actions.append(p.open
           ? el("button", { class: "btn", type: "button", on: { click: () => run("Couldn't close it", () => hub.close(p.id)) } }, "Close")
           : el("button", { class: "btn", type: "button", on: { click: () => run("Couldn't open it", () => hub.open(p.id)) } }, "Open"));
-        if (!p.local && !p.builtin) {
+        if (!p.local) {
           if (confirmUninstall === p.id) {
             actions.append(el("span", { class: "confirm" }, "Uninstall? Your saved data is kept.",
               el("button", { class: "btn danger", type: "button", on: { click: async () => { confirmUninstall = null; await run("Couldn't uninstall it", () => hub.uninstall(p.id, true)); status(`Uninstalled ${p.name}.`, "ok"); } } }, "Uninstall"),
@@ -136,12 +135,9 @@
     for (const r of S.catalog.repos.filter((r) => r.error)) {
       v.append(el("p", { class: "status error" }, `${r.input}: ${r.error}`));
     }
-    if (!S.catalog.checkedAt) {
-      v.append(el("div", { class: "empty" }, el("p", {}, "Loading your repositories…")));
-      return;
-    }
+    if (!S.catalog.checkedAt) v.append(el("p", { class: "hint" }, "Loading the plugin repositories…"));
     const all = catalogLatest().filter(matches);
-    if (!all.length) { v.append(el("p", { class: "empty" }, query ? `Nothing matches “${query}”.` : "Your repositories don't list any plugins.")); return; }
+    if (!all.length) { if (S.catalog.checkedAt) v.append(el("p", { class: "empty" }, query ? `Nothing matches “${query}”.` : "Your repositories don't list any plugins.")); return; }
     for (const p of all) {
       const inst = S.installed.find((i) => i.id === p.id && !i.error);
       const up = inst && updateFor(p.id);
@@ -153,7 +149,7 @@
       v.append(el("article", { class: "card" }, icon(p),
         el("div", { class: "body" },
           el("h3", {}, p.name, el("span", { class: "ver" }, "v" + p.version),
-            p.official ? el("span", { class: "tag blue" }, "official") : null,
+            p.official ? el("span", { class: "tag blue" }, p.builtin ? "built in" : "official") : null,
             inst ? el("span", { class: "tag green" }, inst.local ? "local copy" : `installed v${inst.version}`) : null),
           el("p", { class: "meta" }, [p.author && "by " + p.author, "from " + (p.repoName || "a repository")].filter(Boolean).join(" · ")),
           p.description ? el("p", { class: "desc" }, p.description) : null,
@@ -170,7 +166,7 @@
       const info = S.catalog.repos.find((x) => x.input === r);
       repos.append(el("li", { class: "official" },
         el("div", { class: "grow" }, el("div", { class: "strong" }, info?.name || "Daeva Hub", el("span", { class: "tag blue" }, "official")),
-          el("div", { class: "meta" + (info?.error ? " err" : "") }, info?.error ? info.error : `${r} · plugins made by the Daeva Hub author, installed for you`)),
+          el("div", { class: "meta" + (info?.error ? " err" : "") }, info?.error ? info.error : `${r} · plugins made by the Daeva Hub author, listed in Browse`)),
         el("span", { class: "meta" }, "Built in")));
     }
     for (const r of S.settings.repos) {

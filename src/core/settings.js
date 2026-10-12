@@ -8,7 +8,7 @@ const DEFAULTS = {
   localFolders: [],     // developer plugin folders
   checkOnStart: true,   // look for plugin updates when the launcher starts
   windows: {},          // per plugin: { open, bounds, opacity, compact }
-  autoInstalled: [],    // official plugins already installed once (kept uninstalled if the user removes them)
+  enabledBuiltins: [],  // built-in plugins (the DPS meter) the user has installed from Browse
 };
 
 class Settings {
