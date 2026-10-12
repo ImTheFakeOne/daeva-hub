@@ -12,6 +12,7 @@
     <nav class="nav" role="tablist">
       <button class="navItem" type="button" role="tab" data-tab="installed" id="tab-installed">Installed <span class="count" id="countInstalled"></span></button>
       <button class="navItem" type="button" role="tab" data-tab="browse" id="tab-browse">Browse <span class="count" id="countBrowse"></span></button>
+      <button class="navItem" type="button" role="tab" data-tab="appearance" id="tab-appearance">Appearance</button>
       <button class="navItem" type="button" role="tab" data-tab="settings" id="tab-settings">Settings</button>
     </nav>
     <div class="sideFoot" id="sideFoot"></div>
@@ -31,6 +32,43 @@
 
     <section class="view" id="view-installed" role="tabpanel"></section>
     <section class="view" id="view-browse" role="tabpanel" hidden></section>
+    <section class="view" id="view-appearance" role="tabpanel" hidden>
+      <div class="apHead">
+        <label class="apField">Colours for
+          <select id="apTarget" aria-label="Which plugin to edit"></select>
+        </label>
+        <label class="check" id="apOwnWrap"><input type="checkbox" id="apOwn"> Give this plugin its own colours</label>
+        <span class="hint" id="apNote"></span>
+      </div>
+      <h2>Presets</h2>
+      <div class="presets" id="apPresets"></div>
+      <div class="apGrid">
+        <div class="apControls" id="apControls"></div>
+        <div class="apPreviewWrap">
+          <div class="apBackdrop"><div class="pv" id="apPreview">
+            <div class="pvBar"><b>◆</b><span>Preview</span><i>▾ ✕</i></div>
+            <div class="pvBody">
+              <div class="pvRow me"><em class="w1"></em><span>You</span><span>48.2K/s</span></div>
+              <div class="pvRow alt"><em class="w2"></em><span>Party member</span><span>31.0K/s</span></div>
+              <div class="pvRow"><em class="w3"></em><span>Healer <small>· secondary text</small></span><span>9.1K/s</span></div>
+              <div class="pvChips"><span class="cg">done</span><span class="cw">warning</span><span class="cb">error</span></div>
+              <div class="pvBtn">Button</div>
+            </div>
+          </div></div>
+          <p class="hint">Open overlays change as you edit. The window background's see-through amount is set on each overlay with its slider.</p>
+        </div>
+      </div>
+      <h2>Share or back up</h2>
+      <div class="apActions">
+        <button class="btn" id="apReset" type="button">Reset to the preset</button>
+        <button class="btn" id="apCopy" type="button">Copy theme code</button>
+        <button class="btn" id="apPasteOpen" type="button">Paste theme code…</button>
+      </div>
+      <div id="apPasteBox" hidden>
+        <textarea class="apCode" id="apCode" placeholder="Paste a theme code here" spellcheck="false"></textarea>
+        <div class="apActions"><button class="btn primary" id="apApply" type="button">Use this theme</button><button class="btn ghost" id="apPasteCancel" type="button">Cancel</button></div>
+      </div>
+    </section>
     <section class="view" id="view-settings" role="tabpanel" hidden>
       <h2>Plugin repositories</h2>
       <p class="hint">Paste a repository address: a GitHub repository (github.com/owner/name, which must contain a <code>repo.json</code>) or a direct link to a repository JSON file. Every plugin they list shows up under Browse.</p>
@@ -55,6 +93,7 @@
       <button class="btn" id="dataBtn" type="button">Open the data folder</button>
     </section>
   </main>
+  <script src="../core/theme.js"></script>
   <script src="hub.js"></script>
 </body>
 </html>

@@ -13,6 +13,15 @@
     return;
   }
   const allowed = (perm) => info.permissions.includes(perm);
+  let theme = info.theme;
+  const applyTheme = (t) => {
+    theme = t;
+    for (const [k, v] of Object.entries(t.vars)) document.documentElement.style.setProperty(k, v);
+    document.documentElement.classList.toggle("light", !!t.light);
+  };
+  applyTheme(theme);
+  const applyLocked = (on) => document.body.classList.toggle("locked", !!on);
+  applyLocked(info.locked);
   document.title = info.name;
   document.getElementById("name").textContent = `${info.name} ${info.version}`;
   document.getElementById("badge").hidden = !info.local;
@@ -37,6 +46,7 @@
   compactEl.addEventListener("click", () => { compact = !compact; paint(); host.panel({ compact }); deliver("compact", compact); });
   document.getElementById("close").addEventListener("click", () => host.close());
   document.getElementById("hubBtn").addEventListener("click", () => host.openHub());
+  document.getElementById("lock").addEventListener("click", () => { applyLocked(true); host.panel({ locked: true }); });
 
   let toastTimer = 0;
   const showToast = (text) => {
@@ -55,6 +65,8 @@
     "meter.reset": () => host.meter("reset"),
     "meter.status": () => host.meter("status"),
     "meter.installNpcap": () => host.meter("npcap"),
+    "theme.get": () => theme,
+    "window.screenshot": async () => { const r = await host.screenshot(); showToast(`Screenshot copied, and saved as ${r.name}`); return true; },
     "window.show": () => true,
     "window.hide": () => true,
   };
@@ -72,7 +84,12 @@
   });
 
   // Live events from the hub (the DPS meter), for plugins allowed them.
-  host.onEvent((msg) => { if (msg && typeof msg.event === "string") deliver(msg.event, msg.data); });
+  host.onEvent((msg) => {
+    if (!msg || typeof msg.event !== "string") return;
+    if (msg.event === "theme") applyTheme(msg.data);
+    if (msg.event === "locked") { applyLocked(msg.data); return; }
+    deliver(msg.event, msg.data);
+  });
   deliver("language", "en");
   deliver("compact", compact);
   frame = document.createElement("iframe");

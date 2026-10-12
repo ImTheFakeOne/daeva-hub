@@ -2,7 +2,7 @@
 // Daeva Hub: a plugin launcher for Aion 2 tools. It never touches the game:
 // plugins run in their own always-on-top windows, sandboxed, with no network
 // access, and talk to the hub only through a small message API.
-const { app, BrowserWindow, ipcMain, protocol, dialog, shell, net, screen } = require("electron");
+const { app, BrowserWindow, ipcMain, protocol, dialog, shell, net, screen, globalShortcut, clipboard } = require("electron");
 const { spawn } = require("child_process");
 const path = require("path");
 const fs = require("fs");
@@ -10,6 +10,7 @@ const { PluginManager } = require("./core/plugins");
 const { Settings } = require("./core/settings");
 const { fetchRepo, resolveRepoUrl } = require("./core/repos");
 const { createUpdater } = require("./updater");
+const Theme = require("./core/theme");
 let updater = null;
 
 app.setName("Daeva Hub");
@@ -118,9 +119,44 @@ function openPlugin(id) {
     notifyHub();
   });
   pluginWindows.set(id, win);
+  if (ws.locked) win.setIgnoreMouseEvents(true, { forward: true });
   ws.open = true;
   settings.save();
   notifyHub();
+}
+
+// ── colours ─────────────────────────────────────────────────────────────
+function globalTheme() {
+  const t = settings.data.theme || {};
+  return Theme.normalize(t.tokens || Theme.presetTokens(t.preset), Theme.presetTokens(t.preset));
+}
+function themeFor(id) {
+  const own = (settings.data.pluginThemes || {})[id];
+  const tokens = own ? Theme.normalize(own, globalTheme()) : globalTheme();
+  return { tokens, vars: Theme.toCssVars(tokens), light: Theme.isLight(tokens), own: !!own };
+}
+function broadcastTheme() {
+  for (const [id, w] of pluginWindows) if (!w.isDestroyed()) w.webContents.send("host:event", { event: "theme", data: themeFor(id) });
+  notifyHub();
+}
+
+// ── click-through ("locked") overlays ────────────────────────────────────
+function setLocked(id, locked) {
+  const ws = settings.window(id);
+  ws.locked = !!locked;
+  settings.save();
+  const w = pluginWindows.get(id);
+  if (w && !w.isDestroyed()) {
+    w.setIgnoreMouseEvents(ws.locked, { forward: true });
+    w.webContents.send("host:event", { event: "locked", data: ws.locked });
+  }
+  notifyHub();
+}
+// Ctrl+Alt+L locks every open overlay, or unlocks them all if any is locked.
+function toggleAllLocks() {
+  const ids = [...pluginWindows.keys()];
+  const anyLocked = ids.some((id) => settings.window(id).locked);
+  for (const id of ids) setLocked(id, !anyLocked);
 }
 
 function closePlugin(id) {
@@ -176,6 +212,8 @@ function state() {
     version: app.getVersion(),
     appUpdate: updater ? updater.state() : { status: "idle" },
     settings: { repos: settings.data.repos, officialRepos: OFFICIAL_REPOS, localFolders: settings.data.localFolders, checkOnStart: settings.data.checkOnStart },
+    theme: { preset: (settings.data.theme || {}).preset || Theme.DEFAULT_PRESET, custom: !!(settings.data.theme || {}).tokens, tokens: globalTheme(), pluginThemes: settings.data.pluginThemes || {} },
+    locked: Object.fromEntries(Object.entries(settings.data.windows).map(([id, w]) => [id, !!w.locked])),
     installed,
     catalog: { ...catalog, plugins: [...builtinEntries(), ...catalog.plugins] },
     updates: pm.updates(catalog.plugins, localFolders()).map((u) => ({ id: u.installed.id, from: u.installed.version, to: u.available.version })),
@@ -326,6 +364,22 @@ handleHub("hub:removeLocalFolder", (dir) => {
   return state();
 });
 handleHub("hub:setCheckOnStart", (on) => { settings.data.checkOnStart = !!on; settings.save(); return state(); });
+handleHub("hub:setTheme", (t) => {
+  const preset = Theme.PRESETS[t && t.preset] ? t.preset : Theme.DEFAULT_PRESET;
+  settings.data.theme = { preset, tokens: t && t.tokens ? Theme.normalize(t.tokens, Theme.presetTokens(preset)) : null };
+  settings.save();
+  broadcastTheme();
+  return state();
+});
+handleHub("hub:setPluginTheme", (id, tokens) => {
+  id = String(id);
+  const all = (settings.data.pluginThemes ||= {});
+  if (tokens) all[id] = Theme.normalize(tokens, globalTheme()); else delete all[id];
+  settings.save();
+  broadcastTheme();
+  return state();
+});
+handleHub("hub:setLocked", (id, locked) => { setLocked(String(id), !!locked); return state(); });
 handleHub("hub:checkAppUpdate", async () => { if (updater) await updater.check(); return state(); });
 handleHub("hub:installAppUpdate", () => (updater ? updater.install() : false));
 handleHub("hub:openLink", (url) => {
@@ -343,7 +397,7 @@ ipcMain.handle("host:hello", (e) => {
   const id = pluginOf(e);
   const p = findPlugin(id);
   const ws = settings.window(id);
-  return { id, name: p.name, version: p.version, permissions: p.permissions, local: p.local, builtin: !!p.builtin, opacity: ws.opacity, compact: ws.compact };
+  return { id, name: p.name, version: p.version, permissions: p.permissions, local: p.local, builtin: !!p.builtin, opacity: ws.opacity, compact: ws.compact, locked: !!ws.locked, theme: themeFor(id) };
 });
 ipcMain.handle("host:storageGet", (e, key) => {
   const id = pluginOf(e);
@@ -361,7 +415,18 @@ ipcMain.handle("host:panel", (e, prefs) => {
   if (typeof prefs?.opacity === "number") ws.opacity = Math.min(100, Math.max(20, prefs.opacity));
   if (typeof prefs?.compact === "boolean") ws.compact = prefs.compact;
   settings.save();
+  if (prefs?.locked === true) setLocked(pluginOf(e), true);
   return true;
+});
+ipcMain.handle("host:screenshot", async (e) => {
+  const id = pluginOf(e);
+  const img = await pluginWindows.get(id).webContents.capturePage();
+  clipboard.writeImage(img);
+  const dir = path.join(app.getPath("pictures"), "Daeva Hub");
+  fs.mkdirSync(dir, { recursive: true });
+  const name = `${id}-${new Date().toISOString().replace(/[:T]/g, "-").slice(0, 19)}.png`;
+  fs.writeFileSync(path.join(dir, name), img.toPNG());
+  return { name };
 });
 ipcMain.handle("host:close", (e) => { closePlugin(pluginOf(e)); return true; });
 ipcMain.handle("host:meter", (e, cmd) => {
@@ -377,6 +442,7 @@ ipcMain.handle("host:openHub", () => { createHub(); return true; });
 
 // ── start ────────────────────────────────────────────────────────────────
 app.on("second-instance", () => createHub());
+app.on("will-quit", () => { try { globalShortcut.unregisterAll(); } catch {} });
 app.on("before-quit", () => { quitting = true; if (meter) { try { meter.kill(); } catch {} } });
 app.on("window-all-closed", () => app.quit());
 
@@ -385,6 +451,7 @@ app.whenReady().then(async () => {
   settings = new Settings(path.join(root, "settings.json"));
   pm = new PluginManager(root, { fetch: net.fetch.bind(net) });
   loadBuiltins();
+  try { globalShortcut.register("CommandOrControl+Alt+L", toggleAllLocks); } catch {}
   protocol.handle("plugin", servePluginFile);
   createHub();
   updater = createUpdater(() => notifyHub());

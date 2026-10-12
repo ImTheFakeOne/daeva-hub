@@ -6,23 +6,65 @@
 <link rel="stylesheet" href="meter.css">
 </head>
 <body>
-  <header class="top" id="top">
-    <div class="target">
-      <div class="tname" id="tname">Waiting for combat…</div>
-      <div class="hp" id="hp" hidden><div class="hpfill" id="hpfill"></div><span id="hptext"></span></div>
+  <div class="meter" id="meter">
+    <header class="tcard" id="tcard">
+      <div class="trow">
+        <span class="boss" id="boss" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M3 3c1.5 3 3 4.6 5 5.2-.6.9-1 2-1 3.3 0 3.4 2.3 6.1 5 6.1s5-2.7 5-6.1c0-1.3-.4-2.4-1-3.3 2-.6 3.5-2.2 5-5.2-2.2 1.1-4.2 1.5-6 1.2C13.9 3.4 12.9 3 12 3s-1.9.4-3 1.2C7.2 4.5 5.2 4.1 3 3zm6 8.2c.9 0 1.6.6 1.6 1.4H8c0-.8.4-1.4 1-1.4zm6 0c.6 0 1 .6 1 1.4h-2.6c0-.8.7-1.4 1.6-1.4zM10 19l.6 2h2.8l.6-2c-.6.2-1.3.3-2 .3s-1.4-.1-2-.3z"/></svg>
+        </span>
+        <div class="tmain">
+          <div class="tline">
+            <span class="ccombat" id="ccombat"></span>
+            <span class="tname" id="tname">Waiting for combat…</span>
+            <span class="thp" id="thp"></span>
+            <span class="tpct" id="tpct"></span>
+          </div>
+          <div class="hp" id="hp"><div class="hpfill" id="hpfill"></div></div>
+        </div>
+      </div>
+      <div class="tstats" id="tstats">
+        <div><span>Kill</span><b id="kill">–</b></div>
+        <div><span>Party DPS</span><b id="pdps">–</b></div>
+        <div><span>Damage</span><b id="tdmg">–</b></div>
+      </div>
+    </header>
+    <div class="notice" id="notice" hidden></div>
+    <main class="rows" id="rows"></main>
+    <footer class="foot" id="foot">
+      <div class="fleft">
+        <span class="timer" id="timer">00:00</span>
+        <span class="ping" id="pingBox"><svg viewBox="0 0 12 10" width="12" height="10" aria-hidden="true"><rect x="0" y="7" width="2" height="3"/><rect x="3.3" y="5" width="2" height="5"/><rect x="6.6" y="2.5" width="2" height="7.5"/><rect x="10" y="0" width="2" height="10"/></svg><span id="ping">–</span></span>
+      </div>
+      <div class="tools">
+        <button class="tool" id="shot" type="button" title="Screenshot to clipboard" aria-label="Screenshot">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
+        <button class="tool" id="histBtn" type="button" title="Fight history" aria-label="Fight history">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M6 3h9l3 3v15H6zM9 9h6M9 13h6M9 17h4"/></svg></button>
+        <button class="tool" id="reset" type="button" title="New fight (reset)" aria-label="Reset">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M5 12a7 7 0 1 0 2.1-5M5 4v4h4"/></svg></button>
+        <button class="tool" id="gear" type="button" title="Meter settings" aria-label="Meter settings">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M4 7h10M18 7h2M4 17h2M10 17h10M14 4v6M6 14v6"/></svg></button>
+      </div>
+    </footer>
+  </div>
+
+  <section class="panel" id="history" hidden aria-label="Fight history">
+    <div class="pHead"><b>Fight history</b><button class="tool" id="histClose" type="button" aria-label="Close history">✕</button></div>
+    <div class="pBody" id="histBody"></div>
+  </section>
+
+  <section class="panel" id="settings" hidden aria-label="Meter settings">
+    <div class="pHead">
+      <nav class="sTabs" id="sTabs" role="tablist"></nav>
+      <button class="tool" id="sClose" type="button" aria-label="Close settings">✕</button>
     </div>
-    <div class="meta">
-      <span class="time" id="time">00:00</span>
-      <span class="ping" id="ping" title="Ping to the game server"></span>
-      <button class="reset" id="reset" title="Start a new fight">Reset</button>
+    <div class="pBody" id="sBody"></div>
+    <div class="pFoot">
+      <button class="sBtn" id="sDefaults" type="button">Reset this tab</button>
+      <span class="sNote">Window colours, font and size: Daeva Hub → Appearance.</span>
     </div>
-  </header>
-  <div class="notice" id="notice" hidden></div>
-  <main id="rows"></main>
-  <footer class="foot" id="foot">
-    <span id="total"></span>
-    <label class="opt"><input type="checkbox" id="mineOnly"> Only me</label>
-  </footer>
+  </section>
+
   <script src="/_sdk/a2.js"></script>
   <script src="meter.js"></script>
 </body>

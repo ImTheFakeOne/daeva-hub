@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld("host", {
   storageSet: (key, value) => ipcRenderer.invoke("host:storageSet", key, value),
   panel: (prefs) => ipcRenderer.invoke("host:panel", prefs),
   close: () => ipcRenderer.invoke("host:close"),
+  screenshot: () => ipcRenderer.invoke("host:screenshot"),
   openHub: () => ipcRenderer.invoke("host:openHub"),
   meter: (cmd) => ipcRenderer.invoke("host:meter", cmd),
   onEvent: (fn) => { ipcRenderer.on("host:event", (_e, msg) => fn(msg)); },

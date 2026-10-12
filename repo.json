@@ -6,13 +6,13 @@
       "name": "Aion 2 Checklist",
       "author": "ImTheFakeOne",
       "description": "Daily and weekly checklist for every character, split into PvE and PvP, with the official 07:00 UTC resets. You tick everything yourself.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "tags": [
         "checklist",
         "dailies",
         "weeklies"
       ],
-      "download": "https://github.com/ImTheFakeOne/aion2-checklist/archive/83e0193da5ec9f3d35655fcad8a9378884962070.zip",
+      "download": "https://github.com/ImTheFakeOne/aion2-checklist/archive/e5a38a13622074a16c9ca1c636b747e455c904b3.zip",
       "icon": "https://raw.githubusercontent.com/ImTheFakeOne/aion2-checklist/HEAD/img/main.png",
       "repoUrl": "https://github.com/ImTheFakeOne/aion2-checklist"
     }

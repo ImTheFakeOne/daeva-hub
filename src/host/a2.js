@@ -8,6 +8,8 @@
 //   await a2.storage.set(key, value)
 //   a2.notify(text)                    a short message in the plugin's window
 //   a2.meter.start() / a2.meter.reset()  the DPS meter (permission "meter")
+//   a2.on("theme", ({tokens, vars, light}) => …)  the player's colours (also set
+//                                      as CSS variables --a2-bg, --a2-accent, … on <html>)
 //   a2.ready()                         call once your handlers are set
 (() => {
   const handlers = {};
@@ -32,6 +34,17 @@
       }
     }
   });
+  // The player's colours, as CSS variables on <html>, before the first paint
+  // where possible and again whenever they change.
+  const applyTheme = (t) => {
+    if (!t || !t.vars) return;
+    const s = document.documentElement.style;
+    for (const k in t.vars) if (/^--a2-[a-z0-9-]+$/.test(k)) s.setProperty(k, String(t.vars[k]));
+    document.documentElement.classList.toggle("a2-light", !!t.light);
+    document.documentElement.classList.add("a2-themed");
+  };
+  (handlers.theme ||= []).push(applyTheme);
+  call("theme.get", []).then(applyTheme, () => {});
   window.a2 = Object.freeze({
     on(event, fn) { (handlers[event] ||= []).push(fn); },
     storage: Object.freeze({
@@ -39,7 +52,8 @@
       set: (key, value) => call("storage.set", [key, JSON.stringify(value)]),
     }),
     notify: (text) => call("notify", [String(text)]),
-    window: Object.freeze({ show: () => call("window.show", []), hide: () => call("window.hide", []) }),
+    // screenshot(): copies this window to the clipboard and saves it in Pictures\Daeva Hub
+    window: Object.freeze({ show: () => call("window.show", []), hide: () => call("window.hide", []), screenshot: () => call("window.screenshot", []) }),
     // DPS meter (permission "meter"): start() begins capture; numbers arrive as
     // a2.on("meter", ({dps, ping, me}) => …) twice a second, and the capture
     // state as a2.on("meter-status", ({running, npcap, error}) => …).

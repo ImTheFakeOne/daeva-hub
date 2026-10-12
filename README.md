@@ -8,7 +8,7 @@ Daeva Hub never touches the game. Plugins run in their own always-on-top overlay
 
 Daeva Hub starts with nothing installed. Everything is in **Browse**, and you pick what you want:
 
-- **DPS Meter** (ships inside the app): live damage per second for you and your party, with the target's HP, fight time and ping. It reads the game's network traffic, the same way the A2Tools DPS Meter does (its capture code comes from A2Tools). It needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
+- **DPS Meter** (ships inside the app): live damage per second for you and your party, styled after NotMeter: target card with HP, class-coloured bars, combat power, DPS and share, fight timer, ping, fight history and a screenshot button. Its ⚙ settings cover layout presets, bar style, row size, columns, names, number formats and every colour, down to each class. It reads the game's network traffic, the same way the A2Tools DPS Meter does (its capture code comes from A2Tools). It needs [Npcap](https://npcap.com/#download): install it with *WinPcap API-compatible mode* ticked. If the meter can't capture, run Daeva Hub as administrator. Like any DPS meter, use it at your own risk: the game's terms may not allow third-party tools.
 - **Official plugins**, such as the **Aion 2 Checklist**, from this repository's [`repo.json`](repo.json). That repository is always listed, so they show in Browse without adding anything.
 - **Plugins from other authors**, once you add their repository in Settings.
 
@@ -24,6 +24,10 @@ You only install it once. From version 0.3.0 Daeva Hub updates itself: it checks
 2. **Browse:** search everything your repositories offer, and click **Install**.
 3. **Installed:** open, close or uninstall plugins. Each one opens in its own overlay window. Drag it by its title bar, set its background opacity with the slider, and fold its controls away with ▾. Windows remember where you left them and reopen next time.
 4. **Update all** (top right) installs every newer version your repositories list. Daeva Hub checks for updates when it starts, and whenever you click **Check for updates**.
+
+**Appearance** changes the colours of the hub and every plugin: pick a preset or set each colour, the font, text size and corner roundness, with a live preview. Any plugin can have its own colours instead. Copy a theme code to share it or keep a backup.
+
+**Lock (click-through):** the 🔓 on an overlay's title bar, or Lock on its card in Installed, lets clicks go through to the game. **Ctrl+Alt+L** locks or unlocks every overlay.
 
 Overlay windows show above the game in **borderless / windowed fullscreen**. In exclusive fullscreen Windows doesn't allow anything on top of the game.
 
@@ -55,6 +59,7 @@ await a2.storage.set("state", { ticks: 3 });      // any JSON value, up to 1 MB
 a2.notify("Saved!");
 a2.on("compact", (on) => { /* hide your controls */ });
 a2.ready();                                        // call once your handlers are set
+await a2.window.screenshot();                      // copy this window to the clipboard
 
 // with the "meter" permission:
 a2.on("meter", ({ dps, ping, me }) => { /* dps.map, dps.targetName, dps.battleTime … twice a second */ });
@@ -64,6 +69,8 @@ await a2.meter.reset();                            // new fight
 ```
 
 The SDK matches the A2Tools DPS Meter's plugin SDK, so plugins written for A2Tools run here too. Plugins can't reach the network, and their scripts and styles must be files in the plugin folder. Keep the page background transparent: the window paints its own panel at the opacity the player picks.
+
+Use the player's colours: the SDK sets CSS variables on `<html>` (and the class `a2-themed`, plus `a2-light` for light themes), and updates them live. They are `--a2-bg`, `--a2-title-bg`, `--a2-title-text`, `--a2-border`, `--a2-surface`, `--a2-surface-alt`, `--a2-text`, `--a2-muted`, `--a2-accent`, `--a2-accent-text`, `--a2-highlight`, `--a2-good`, `--a2-warn`, `--a2-bad` (each also as `-rgb`, e.g. `rgba(var(--a2-accent-rgb), .3)`), and `--a2-font`, `--a2-font-size`, `--a2-radius`, `--a2-border-width`. `a2.on("theme", ({ tokens, light }) => …)` gives the same in script.
 
 While you work on a plugin, add its folder under **Settings → Local plugin folders**. It loads straight from the folder; close and reopen its window to see your changes.
 

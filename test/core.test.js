@@ -144,3 +144,22 @@ test("local developer folders", () => {
   assert.equal(list.find((p) => p.id === "my-dev").local, true);
   assert.ok(list.find((p) => p.error), "a broken folder is listed with its error");
 });
+
+test("theme: presets are complete, bad input falls back, variables are produced", () => {
+  const T = require("../src/core/theme");
+  for (const id of Object.keys(T.PRESETS)) {
+    const t = T.presetTokens(id);
+    for (const c of T.COLORS) assert.match(t[c.key], /^#[0-9a-f]{6}$/);
+  }
+  const t = T.normalize({ accent: "#ABCDEF", bg: "red", fontSize: 99, font: "Comic Sans MS" });
+  assert.equal(t.accent, "#abcdef");
+  assert.equal(t.bg, T.PRESETS[T.DEFAULT_PRESET].bg);
+  assert.equal(t.fontSize, 18);
+  assert.equal(t.font, "Segoe UI");
+  const v = T.toCssVars(t);
+  assert.equal(v["--a2-accent"], "#abcdef");
+  assert.equal(v["--a2-accent-rgb"], "171, 205, 239");
+  assert.equal(v["--a2-surface-alt"], t.surfaceAlt);
+  assert.equal(T.isLight(T.presetTokens("daylight")), true);
+  assert.equal(T.isLight(T.presetTokens("daeva-gold")), false);
+});

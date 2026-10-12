@@ -8,7 +8,9 @@ const DEFAULTS = {
   localFolders: [],     // developer plugin folders
   checkOnStart: true,   // look for plugin updates when the launcher starts
   windows: {},          // per plugin: { open, bounds, opacity, compact }
-  enabledBuiltins: [],  // built-in plugins (the DPS meter) the user has installed from Browse
+  enabledBuiltins: [],
+  theme: { preset: "daeva-gold", tokens: null }, // the global colours (tokens: null = the preset as it is)
+  pluginThemes: {},     // per plugin: its own full set of colours, or absent to follow the global theme  // built-in plugins (the DPS meter) the user has installed from Browse
 };
 
 class Settings {
@@ -24,7 +26,7 @@ class Settings {
     fs.renameSync(tmp, this.file);
   }
   window(id) {
-    return (this.data.windows[id] ||= { open: false, bounds: null, opacity: 92, compact: false });
+    return (this.data.windows[id] ||= { open: false, bounds: null, opacity: 92, compact: false, locked: false });
   }
 }
 
