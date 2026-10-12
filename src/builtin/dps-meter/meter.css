@@ -5,6 +5,7 @@
   --a2-surface-alt: #1c2434; --a2-border: #263044; --a2-good: #5cc47a; --a2-warn: #ffbe50; --a2-bad: #ff6b5c; --a2-highlight: #79a8ff;
   --a2-font: "Segoe UI", system-ui, sans-serif; --a2-font-size: 13px; --a2-radius: 8px;
   --m-scale: 1; --m-row-h: 32px; --m-gap: 4px; --m-row-r: 3px; --m-bar-a: .85; --m-track: rgba(0,0,0,.35);
+  color-scheme: dark;
   --m-cp: #7fd6e0; --m-share: #ffd76a; --m-dps: #ffffff; --m-name: #f1f1f1; --m-hp1: #3fb98a; --m-hp2: #3fb98a; --m-hp-pct: #6fd6c6; --m-hp-h: 7px; --m-timer: #39d26a;
 }
 * { box-sizing: border-box; }

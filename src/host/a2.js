@@ -36,11 +36,15 @@
   });
   // The player's colours, as CSS variables on <html>, before the first paint
   // where possible and again whenever they change.
+  document.documentElement.style.colorScheme = "dark"; // until the theme arrives
   const applyTheme = (t) => {
     if (!t || !t.vars) return;
     const s = document.documentElement.style;
     for (const k in t.vars) if (/^--a2-[a-z0-9-]+$/.test(k)) s.setProperty(k, String(t.vars[k]));
     document.documentElement.classList.toggle("a2-light", !!t.light);
+    // Must match the window around the plugin, or Chromium paints the plugin's
+    // background solid white instead of see-through.
+    document.documentElement.style.colorScheme = t.light ? "light" : "dark";
     document.documentElement.classList.add("a2-themed");
   };
   (handlers.theme ||= []).push(applyTheme);
