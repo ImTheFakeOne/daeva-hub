@@ -20,7 +20,10 @@
     document.documentElement.classList.toggle("light", !!t.light);
   };
   applyTheme(theme);
-  const applyLocked = (on) => document.body.classList.toggle("locked", !!on);
+  const applyLocked = (on, announce) => {
+    document.body.classList.toggle("locked", !!on);
+    if (on && announce) showToast("Locked. Press Ctrl+Alt+L to unlock.");
+  };
   applyLocked(info.locked);
   document.title = info.name;
   document.getElementById("name").textContent = `${info.name} ${info.version}`;
@@ -46,7 +49,7 @@
   compactEl.addEventListener("click", () => { compact = !compact; paint(); host.panel({ compact }); deliver("compact", compact); });
   document.getElementById("close").addEventListener("click", () => host.close());
   document.getElementById("hubBtn").addEventListener("click", () => host.openHub());
-  document.getElementById("lock").addEventListener("click", () => { applyLocked(true); host.panel({ locked: true }); });
+  document.getElementById("lock").addEventListener("click", () => { applyLocked(true, true); host.panel({ locked: true }); });
 
   let toastTimer = 0;
   const showToast = (text) => {
@@ -87,7 +90,7 @@
   host.onEvent((msg) => {
     if (!msg || typeof msg.event !== "string") return;
     if (msg.event === "theme") applyTheme(msg.data);
-    if (msg.event === "locked") { applyLocked(msg.data); return; }
+    if (msg.event === "locked") { applyLocked(msg.data, true); return; }
     deliver(msg.event, msg.data);
   });
   deliver("language", "en");

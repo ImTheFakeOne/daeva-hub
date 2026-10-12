@@ -27,7 +27,7 @@ You only install it once. From version 0.3.0 Daeva Hub updates itself: it checks
 
 **Appearance** changes the colours of the hub and every plugin: pick a preset or set each colour, the font, text size and corner roundness, with a live preview. Any plugin can have its own colours instead. Copy a theme code to share it or keep a backup.
 
-**Lock (click-through):** the 🔓 on an overlay's title bar, or Lock on its card in Installed, lets clicks go through to the game. **Ctrl+Alt+L** locks or unlocks every overlay.
+**Lock (click-through):** the 🔓 on an overlay's title bar, or Lock on its card in Installed, lets clicks go through to the game and hides the title bar. **Ctrl+Alt+L** locks or unlocks every overlay.
 
 Overlay windows show above the game in **borderless / windowed fullscreen**. In exclusive fullscreen Windows doesn't allow anything on top of the game.
 
